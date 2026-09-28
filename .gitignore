@@ -1,0 +1,8 @@
+.build/
+.build-*/
+build/
+.swiftpm/
+.DS_Store
+.claude/
+Tools/
+Resources/AppIcon.iconset/
