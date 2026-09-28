@@ -27,7 +27,10 @@ BIN := $(SWIFT_BUILD_DIR)/wiggle
 SIGN_ID := $(or $(SIGN_ID),$(shell security find-identity -v -p codesigning 2>/dev/null \
 	| awk '/Apple Development/ { print $$2; exit }'),-)
 
-.PHONY: all build bundle run stop test clean logs permissions
+# /Applications when the user can write to it, else ~/Applications.
+INSTALL_DIR ?= $(shell [ -w /Applications ] && echo /Applications || echo $(HOME)/Applications)
+
+.PHONY: all build bundle run stop install test clean logs permissions
 
 all: bundle
 
@@ -52,6 +55,14 @@ run: stop bundle
 
 stop:
 	@pkill -x $(APP_NAME) 2>/dev/null || true
+
+# ditto keeps the code signature intact; the old copy is removed first so no
+# stale files from an earlier version remain in the bundle.
+install: stop bundle
+	mkdir -p "$(INSTALL_DIR)"
+	rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
+	ditto $(APP) "$(INSTALL_DIR)/$(APP_NAME).app"
+	@echo "installed $(INSTALL_DIR)/$(APP_NAME).app"
 
 test:
 	swift test
