@@ -11,7 +11,7 @@ final class SlotStore {
     /// key means an empty slot.
     private struct File: Codable {
         var version: Int
-        var rings: [[Int: LenientAssignment]]
+        var rings: [[Int: LenientSlot]]
         var triggers: [String]?
         var triggerShortcut: String?
         var overlayOpacity: CGFloat?
@@ -21,13 +21,13 @@ final class SlotStore {
 
     /// `nil` for a slot this version cannot read, such as a typo in a hand
     /// edited shortcut, so that it does not take the other slots with it.
-    private struct LenientAssignment: Codable {
-        var value: SlotAssignment?
+    private struct LenientSlot: Codable {
+        var value: Slot?
 
-        init(_ value: SlotAssignment) { self.value = value }
+        init(_ value: Slot) { self.value = value }
 
         init(from decoder: Decoder) throws {
-            value = try? SlotAssignment(from: decoder)
+            value = try? Slot(from: decoder)
         }
 
         func encode(to encoder: Encoder) throws {
@@ -60,7 +60,7 @@ final class SlotStore {
     static let defaultURL: URL = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent(".config/wiggle/config.json")
 
-    private(set) var slots: [SlotID: SlotAssignment] = [:]
+    private(set) var slots: [SlotID: Slot] = [:]
 
     /// Never empty: without a trigger the overlay cannot open.
     private(set) var triggers = TriggerKind.defaults
@@ -89,10 +89,11 @@ final class SlotStore {
         slots.keys.contains { if case .outer = $0 { return true }; return false }
     }
 
-    subscript(id: SlotID) -> SlotAssignment? { slots[id] }
+    subscript(id: SlotID) -> SlotAssignment? { slots[id]?.assignment }
 
-    func assign(_ assignment: SlotAssignment?, to id: SlotID) {
-        slots[id] = assignment
+    /// `nil` empties the slot.
+    func assign(_ slot: Slot?, to id: SlotID) {
+        slots[id] = slot
         save()
     }
 
@@ -190,21 +191,22 @@ final class SlotStore {
     /// The JSON has no trace of an image face, so the PNG file decides. The
     /// next save deletes a file left over at an app slot.
     private func attachImages() {
-        for case (let id, .action(let action, _)) in slots {
-            guard let png = try? Data(contentsOf: iconURL(for: id)), let image = SlotImage(png: png)
+        for case (let id, let slot) in slots {
+            guard case .action(let action, _) = slot.assignment,
+                let png = try? Data(contentsOf: iconURL(for: id)), let image = SlotImage(png: png)
             else { continue }
-            slots[id] = .action(action, face: .image(image))
+            slots[id]?.assignment = .action(action, face: .image(image))
         }
     }
 
     /// Drops what does not fit the wheel, so a file from another version
     /// still loads.
-    private static func clampedRings(_ rings: [[Int: SlotAssignment]]) -> [SlotID: SlotAssignment] {
-        var result: [SlotID: SlotAssignment] = [:]
+    private static func clampedRings(_ rings: [[Int: Slot]]) -> [SlotID: Slot] {
+        var result: [SlotID: Slot] = [:]
         for (ring, slots) in rings.enumerated() where ring < 3 {
-            for (number, assignment) in slots {
+            for (number, slot) in slots {
                 guard let id = SlotID(ring: ring, slot: number) else { continue }
-                result[id] = assignment
+                result[id] = slot
             }
         }
         return result
@@ -220,13 +222,13 @@ final class SlotStore {
         min(max(opacity, Config.overlayOpacityRange.lowerBound), Config.overlayOpacityRange.upperBound)
     }
 
-    private static func migrateV3(_ slots: [Int: SlotAssignment]) -> [SlotID: SlotAssignment] {
-        var result: [SlotID: SlotAssignment] = [:]
+    private static func migrateV3(_ slots: [Int: SlotAssignment]) -> [SlotID: Slot] {
+        var result: [SlotID: Slot] = [:]
         for (number, assignment) in slots {
             if number == 9 {
-                result[.center] = assignment
+                result[.center] = Slot(assignment)
             } else if SlotID.innerNumbers.contains(number) {
-                result[.inner(number)] = assignment
+                result[.inner(number)] = Slot(assignment)
             }
         }
         return result
@@ -246,11 +248,11 @@ final class SlotStore {
     private func save() {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        var rings: [[Int: LenientAssignment]] = [[:], [:], [:]]
+        var rings: [[Int: LenientSlot]] = [[:], [:], [:]]
         var pngs: [String: Data] = [:]
-        for (id, assignment) in slots {
-            rings[id.ring][id.number] = LenientAssignment(assignment)
-            if case .action(_, face: .image(let image)) = assignment {
+        for (id, slot) in slots {
+            rings[id.ring][id.number] = LenientSlot(slot)
+            if case .action(_, face: .image(let image)) = slot.assignment {
                 pngs[iconURL(for: id).lastPathComponent] = image.png
             }
         }

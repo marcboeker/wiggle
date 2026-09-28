@@ -3,11 +3,12 @@ import KeyboardShortcuts
 
 /// In tab bar order.
 enum SlotEditorTab: CaseIterable {
-    case app, keyboardShortcut, appleShortcut, appleScript
+    case app, previousApp, keyboardShortcut, appleShortcut, appleScript
 
     var title: String {
         switch self {
         case .app: "App"
+        case .previousApp: "Previous App"
         case .keyboardShortcut: "Keyboard Shortcut"
         case .appleShortcut: "Apple Shortcut"
         case .appleScript: "AppleScript"
@@ -36,13 +37,18 @@ struct SlotDraft: Equatable {
     var emoji: String?
     var image: SlotImage?
     var faceKind = SlotFaceKind.emoji
+    /// Kept across tabs, like the face.
+    var color: SlotColor?
 
-    init(_ assignment: SlotAssignment?) {
+    init(_ assignment: SlotAssignment?, color: SlotColor? = nil) {
+        self.color = color
         switch assignment {
         case nil:
             break
         case .app(let ref):
             app = ref
+        case .previousApp:
+            tab = .previousApp
         case .action(let action, let face):
             switch action {
             case .shortcut(let value):
@@ -73,6 +79,8 @@ struct SlotDraft: Equatable {
         switch tab {
         case .app:
             return app.map(SlotAssignment.app)
+        case .previousApp:
+            return .previousApp
         case .keyboardShortcut:
             guard let shortcut else { return nil }
             action = .shortcut(shortcut)
@@ -90,6 +98,8 @@ struct SlotDraft: Equatable {
         }
         return face.map { .action(action, face: $0) }
     }
+
+    var slot: Slot? { assignment.map { Slot($0, color: color) } }
 }
 
 /// Edits a `SlotDraft`; nothing reaches the store until Save. Clear Slot
@@ -97,7 +107,7 @@ struct SlotDraft: Equatable {
 @MainActor
 final class SlotEditorSheet: NSObject {
     let window: NSWindow
-    var onSave: ((SlotAssignment) -> Void)?
+    var onSave: ((Slot) -> Void)?
     var onClear: (() -> Void)?
 
     private var draft: SlotDraft { didSet { draftChanged() } }
@@ -115,6 +125,7 @@ final class SlotEditorSheet: NSObject {
     private let faceAppIcon = NSImageView()
     private let faceHint = NSTextField(labelWithString: "")
     private let saveButton = NSButton(title: "Save", target: nil, action: nil)
+    private var colorSwatches: [ColorSwatch] = []
 
     /// Allows every shortcut: Wiggle posts it rather than registering it,
     /// and the default policy refuses the ones in Wiggle's own Edit menu,
@@ -129,15 +140,15 @@ final class SlotEditorSheet: NSObject {
         return recorder
     }()
 
-    init(label: String, assignment: SlotAssignment?) {
-        draft = SlotDraft(assignment)
+    init(label: String, slot: Slot?) {
+        draft = SlotDraft(slot?.assignment, color: slot?.color)
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 560, height: 540),
             styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.contentMinSize = NSSize(width: 480, height: 460)
         window.title = label
         super.init()
-        buildContent(isOccupied: assignment != nil)
+        buildContent(isOccupied: slot != nil)
         draftChanged()
         AppleShortcutCatalog.list { [weak self] names in self?.showAppleShortcuts(names) }
     }
@@ -166,6 +177,7 @@ final class SlotEditorSheet: NSObject {
         separator.translatesAutoresizingMaskIntoConstraints = false
 
         let iconSection = makeIconSection()
+        let colorSection = makeColorSection()
 
         let cancelButton = NSButton(title: "Cancel", target: self, action: #selector(cancel))
         cancelButton.keyEquivalent = "\u{1b}"
@@ -177,7 +189,7 @@ final class SlotEditorSheet: NSObject {
         buttons.translatesAutoresizingMaskIntoConstraints = false
 
         guard let content = window.contentView else { return }
-        for view in [tabView, separator, iconSection, buttons] { content.addSubview(view) }
+        for view in [tabView, separator, iconSection, colorSection, buttons] { content.addSubview(view) }
         NSLayoutConstraint.activate([
             tabView.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),
             tabView.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
@@ -188,7 +200,10 @@ final class SlotEditorSheet: NSObject {
             iconSection.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 12),
             iconSection.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
             iconSection.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -20),
-            buttons.topAnchor.constraint(equalTo: iconSection.bottomAnchor, constant: 16),
+            colorSection.topAnchor.constraint(equalTo: iconSection.bottomAnchor, constant: 12),
+            colorSection.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
+            colorSection.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -20),
+            buttons.topAnchor.constraint(equalTo: colorSection.bottomAnchor, constant: 16),
             buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
             buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -16),
         ])
@@ -207,6 +222,7 @@ final class SlotEditorSheet: NSObject {
     private func editor(for tab: SlotEditorTab) -> NSView {
         switch tab {
         case .app: makeAppEditor()
+        case .previousApp: makePreviousAppEditor()
         case .keyboardShortcut: makeShortcutEditor()
         case .appleShortcut: makeAppleShortcutEditor()
         case .appleScript: makeAppleScriptEditor()
@@ -224,6 +240,19 @@ final class SlotEditorSheet: NSObject {
             appIcon.widthAnchor.constraint(equalToConstant: 64),
             appIcon.heightAnchor.constraint(equalToConstant: 64),
         ])
+        return centered(stack)
+    }
+
+    private func makePreviousAppEditor() -> NSView {
+        let icon = NSImageView(image: OverlayText.previousAppSymbol(color: .secondaryLabelColor) ?? NSImage())
+        let text = NSTextField(
+            wrappingLabelWithString: "Switches back to the app you used before the one in front, like ⌘⇥ does.")
+        text.alignment = .center
+        text.textColor = .secondaryLabelColor
+        let stack = NSStackView(views: [icon, text])
+        stack.orientation = .vertical
+        stack.spacing = 10
+        NSLayoutConstraint.activate([text.widthAnchor.constraint(lessThanOrEqualToConstant: 360)])
         return centered(stack)
     }
 
@@ -318,6 +347,21 @@ final class SlotEditorSheet: NSObject {
         return stack
     }
 
+    /// "None" first, then every color in declaration order.
+    private func makeColorSection() -> NSView {
+        colorSwatches = ([nil] + SlotColor.allCases.map(Optional.some)).map { color in
+            let swatch = ColorSwatch(color: color)
+            swatch.target = self
+            swatch.action = #selector(colorPicked(_:))
+            return swatch
+        }
+        let stack = NSStackView(views: [NSTextField(labelWithString: "Color:")] + colorSwatches)
+        stack.spacing = 8
+        stack.setCustomSpacing(12, after: stack.views[0])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }
+
     private func centered(_ view: NSView) -> NSView {
         let container = NSView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -343,22 +387,28 @@ final class SlotEditorSheet: NSObject {
     }
 
     private func draftChanged() {
-        let isApp = draft.tab == .app
+        let isPreviousApp = draft.tab == .previousApp
+        let isApp = draft.tab == .app || isPreviousApp
         appIcon.image = draft.app?.icon
         appName.stringValue = draft.app?.name ?? "No app chosen"
 
         faceKindControl.isEnabled = !isApp
         faceKindControl.selectedSegment = isApp ? -1 : SlotFaceKind.allCases.firstIndex(of: draft.faceKind)!
         emojiWell.isEnabled = !isApp
-        faceAppIcon.image = draft.app?.icon
+        faceAppIcon.image = isPreviousApp
+            ? OverlayText.previousAppSymbol(color: .secondaryLabelColor) : draft.app?.icon
         faceAppIcon.isHidden = !isApp
         emojiWell.isHidden = isApp || draft.faceKind != .emoji
         imageWell.isHidden = isApp || draft.faceKind != .image
         switch (isApp, draft.faceKind) {
+        case (true, _) where isPreviousApp:
+            faceHint.stringValue = "The wheel shows the previous app's icon."
         case (true, _): faceHint.stringValue = "An app slot always shows the app's icon."
         case (false, .emoji): faceHint.stringValue = "Click the well to pick an emoji."
         case (false, .image): faceHint.stringValue = "Paste an image with ⌘V or drop one on the well."
         }
+
+        for swatch in colorSwatches { swatch.isPicked = swatch.color == draft.color }
 
         saveButton.isEnabled = draft.assignment != nil
     }
@@ -400,9 +450,13 @@ final class SlotEditorSheet: NSObject {
         imageWell.image = draft.image?.image
     }
 
+    @objc private func colorPicked(_ sender: ColorSwatch) {
+        draft.color = sender.color
+    }
+
     @objc private func save() {
-        guard let assignment = draft.assignment else { return }
-        onSave?(assignment)
+        guard let slot = draft.slot else { return }
+        onSave?(slot)
         end()
     }
 
@@ -560,5 +614,58 @@ private final class EmojiWell: NSView, @preconcurrency NSTextInputClient {
     func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
         guard let window else { return .zero }
         return window.convertToScreen(convert(bounds, to: nil))
+    }
+}
+
+/// A round color chip; the one in use gets a ring. `color` is `nil` for the
+/// slashed "None" chip.
+@MainActor
+private final class ColorSwatch: NSButton {
+    static let side: CGFloat = 20
+
+    let color: SlotColor?
+    var isPicked = false {
+        didSet {
+            needsDisplay = true
+            setAccessibilityValue(isPicked ? "Selected" : "")
+        }
+    }
+
+    init(color: SlotColor?) {
+        self.color = color
+        super.init(frame: NSRect(x: 0, y: 0, width: Self.side, height: Self.side))
+        title = ""
+        isBordered = false
+        let name = color?.title ?? "None"
+        toolTip = name
+        setAccessibilityTitle(name)
+        widthAnchor.constraint(equalToConstant: Self.side).isActive = true
+        heightAnchor.constraint(equalToConstant: Self.side).isActive = true
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let chip = NSBezierPath(ovalIn: bounds.insetBy(dx: 4, dy: 4))
+        if let color {
+            color.color.setFill()
+            chip.fill()
+        } else {
+            NSColor.separatorColor.setStroke()
+            chip.lineWidth = 1
+            chip.stroke()
+            let slash = NSBezierPath()
+            slash.move(to: NSPoint(x: bounds.minX + 5, y: bounds.maxY - 5))
+            slash.line(to: NSPoint(x: bounds.maxX - 5, y: bounds.minY + 5))
+            NSColor.secondaryLabelColor.setStroke()
+            slash.lineWidth = 1
+            slash.stroke()
+        }
+        if isPicked {
+            let ring = NSBezierPath(ovalIn: bounds.insetBy(dx: 1, dy: 1))
+            NSColor.labelColor.setStroke()
+            ring.lineWidth = 2
+            ring.stroke()
+        }
     }
 }

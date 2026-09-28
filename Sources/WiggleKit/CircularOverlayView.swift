@@ -5,8 +5,12 @@ import AppKit
 @MainActor
 final class CircularOverlayView: NSView {
 
-    var slots: [SlotID: SlotAssignment] = [:] { didSet { if slots != oldValue { needsDisplay = true } } }
+    var slots: [SlotID: Slot] = [:] { didSet { if slots != oldValue { needsDisplay = true } } }
     var hovered: SlotID? { didSet { if hovered != oldValue { needsDisplay = true } } }
+
+    /// A previous app slot shows this icon, or a symbol while it is `nil`,
+    /// as in Settings.
+    var previousAppIcon: NSImage? { didSet { if previousAppIcon !== oldValue { needsDisplay = true } } }
 
     /// The overlay shows ring 2 only while one of its slots is assigned.
     /// Settings always shows it, so an empty ring 2 slot can be assigned.
@@ -87,7 +91,11 @@ final class CircularOverlayView: NSView {
         let path = slotPath(id, center: center)
         let isHovered = hovered == id
 
-        contentColor.withAlphaComponent(isHovered ? 0.20 : 0.08).setFill()
+        if let color = slots[id]?.color {
+            color.color.withAlphaComponent(isHovered ? 0.45 : 0.25).setFill()
+        } else {
+            contentColor.withAlphaComponent(isHovered ? 0.20 : 0.08).setFill()
+        }
         path.fill()
         // One device pixel: neighbours stroke the same shared edge.
         separatorColor.withAlphaComponent(0.9).setStroke()
@@ -110,7 +118,8 @@ final class CircularOverlayView: NSView {
         // A slice's text box stays narrow so text never spills into a
         // neighbour; its icon gets the larger square.
         let labelRect = id == .center ? iconRect : NSRect(center: labelCenter, size: NSSize(width: 60, height: 32))
-        OverlayText.drawSlotContent(slots[id], in: labelRect, iconRect: iconRect, color: contentColor)
+        OverlayText.drawSlotContent(
+            slots[id]?.assignment, previousAppIcon: previousAppIcon, in: labelRect, iconRect: iconRect, color: contentColor)
     }
 
     /// An annulus sector, approximated with straight segments.

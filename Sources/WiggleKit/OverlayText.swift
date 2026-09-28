@@ -26,13 +26,17 @@ enum OverlayText {
             respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high.rawValue])
     }
 
-    /// An app's icon, a face, `❓` for a face-less slot from an old config, or
-    /// the empty `+`.
+    /// An app's icon, the previous app's icon or a symbol without one, a
+    /// face, `❓` for a face-less slot from an old config, or the empty `+`.
     @MainActor
-    static func drawSlotContent(_ assignment: SlotAssignment?, in rect: NSRect, iconRect: NSRect, color: NSColor) {
+    static func drawSlotContent(
+        _ assignment: SlotAssignment?, previousAppIcon: NSImage?, in rect: NSRect, iconRect: NSRect, color: NSColor
+    ) {
         switch assignment {
         case .app(let ref):
             drawIcon(ref.icon, in: iconRect)
+        case .previousApp:
+            if let icon = previousAppIcon ?? previousAppSymbol(color: color) { drawIcon(icon, in: iconRect) }
         case .action(_, face: .emoji(let emoji)):
             draw(emoji, in: rect, size: 20, alpha: 1, weight: .semibold, color: color)
         case .action(_, face: .image(let image)):
@@ -42,6 +46,20 @@ enum OverlayText {
         case nil:
             draw("+", in: rect, size: 22, alpha: 0.3, weight: .light, color: color)
         }
+    }
+
+    /// One image per color: the overlay draws it again on every hover change.
+    @MainActor private static var previousAppSymbols: [NSColor: NSImage] = [:]
+
+    @MainActor
+    static func previousAppSymbol(color: NSColor) -> NSImage? {
+        if let symbol = previousAppSymbols[color] { return symbol }
+        let configuration = NSImage.SymbolConfiguration(pointSize: 32, weight: .regular)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
+        let symbol = NSImage(systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "Previous App")?
+            .withSymbolConfiguration(configuration)
+        previousAppSymbols[color] = symbol
+        return symbol
     }
 
     static func drawHint(_ text: String, at point: NSPoint, color: NSColor) {

@@ -41,7 +41,7 @@ private func imageFace(_ color: NSColor) throws -> SlotAssignment {
     let url = temporaryConfigURL()
     let store = SlotStore(url: url)
     let assignment = try imageFace(.red)
-    store.assign(assignment, to: .inner(3))
+    store.assign(Slot(assignment), to: .inner(3))
     store.waitForWrites()
 
     let file = url.deletingLastPathComponent().appendingPathComponent("icons/slot-3.png")
@@ -59,12 +59,12 @@ private func imageFace(_ color: NSColor) throws -> SlotAssignment {
 @Test func replacingAnEmojiWithAnImageRemovesTheLabel() throws {
     let url = temporaryConfigURL()
     let store = SlotStore(url: url)
-    store.assign(.action(copy, face: .emoji("📋")), to: .center)
+    store.assign(Slot(.action(copy, face: .emoji("📋"))), to: .center)
     store.waitForWrites()
     #expect(configText(url).contains(#""label" : "📋""#))
 
     let image = try imageFace(.red)
-    store.assign(image, to: .center)
+    store.assign(Slot(image), to: .center)
     store.waitForWrites()
     #expect(!configText(url).contains("label"))
     #expect(SlotStore(url: url)[.center] == image)
@@ -75,11 +75,11 @@ private func imageFace(_ color: NSColor) throws -> SlotAssignment {
     let url = temporaryConfigURL()
     let file = url.deletingLastPathComponent().appendingPathComponent("icons/center.png")
     let store = SlotStore(url: url)
-    store.assign(try imageFace(.red), to: .center)
+    store.assign(Slot(try imageFace(.red)), to: .center)
     store.waitForWrites()
     #expect(exists(file))
 
-    store.assign(.action(copy, face: .emoji("📋")), to: .center)
+    store.assign(Slot(.action(copy, face: .emoji("📋"))), to: .center)
     store.waitForWrites()
     #expect(!exists(file))
     #expect(SlotStore(url: url)[.center] == .action(copy, face: .emoji("📋")))
@@ -92,8 +92,8 @@ private func imageFace(_ color: NSColor) throws -> SlotAssignment {
     let store = SlotStore(url: url)
     let red = try imageFace(.red)
     let blue = try imageFace(.blue)
-    store.assign(red, to: .inner(3))
-    store.assign(blue, to: .center)
+    store.assign(Slot(red), to: .inner(3))
+    store.assign(Slot(blue), to: .center)
 
     store.swap(.inner(3), with: .outer(2))
     store.waitForWrites()
@@ -115,7 +115,7 @@ private func imageFace(_ color: NSColor) throws -> SlotAssignment {
     let url = temporaryConfigURL()
     let file = url.deletingLastPathComponent().appendingPathComponent("icons/center.png")
     let store = SlotStore(url: url)
-    store.assign(try imageFace(.red), to: .center)
+    store.assign(Slot(try imageFace(.red)), to: .center)
     store.waitForWrites()
     #expect(exists(file))
 

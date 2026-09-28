@@ -16,7 +16,7 @@ import Testing
     let shortcut = SlotAssignment.action(
         .shortcut(Shortcut(keyCode: UInt16(kVK_ANSI_C), flags: [.maskCommand])), face: nil)
     let store = SlotStore(url: url)
-    store.assign(shortcut, to: .inner(4))
+    store.assign(Slot(shortcut), to: .inner(4))
     store.waitForWrites()
 
     let reopened = SlotStore(url: url)
@@ -30,7 +30,7 @@ import Testing
     let shortcut = SlotAssignment.action(
         .shortcut(Shortcut(keyCode: UInt16(kVK_ANSI_4), flags: [.maskCommand, .maskShift])), face: .emoji("📸"))
     let store = SlotStore(url: url)
-    store.assign(shortcut, to: .inner(2))
+    store.assign(Slot(shortcut), to: .inner(2))
     store.waitForWrites()
 
     #expect(SlotStore(url: url)[.inner(2)] == shortcut)
@@ -41,7 +41,7 @@ import Testing
     let url = temporaryConfigURL()
     let app = SlotAssignment.app(AppRef(bundleIdentifier: "com.apple.Safari", name: "Safari"))
     let store = SlotStore(url: url)
-    store.assign(app, to: .outer(6))
+    store.assign(Slot(app), to: .outer(6))
     store.waitForWrites()
 
     #expect(SlotStore(url: url)[.outer(6)] == app)
@@ -52,7 +52,7 @@ import Testing
     let url = temporaryConfigURL()
     let shortcut = SlotAssignment.action(.shortcut(Shortcut(keyCode: 36, flags: [])), face: nil)
     let store = SlotStore(url: url)
-    store.assign(shortcut, to: .center)
+    store.assign(Slot(shortcut), to: .center)
     store.waitForWrites()
 
     #expect(SlotStore(url: url)[.center] == shortcut)
@@ -62,7 +62,7 @@ import Testing
 @Test func clearingASlotIsPersisted() {
     let url = temporaryConfigURL()
     let store = SlotStore(url: url)
-    store.assign(.action(.shortcut(Shortcut(keyCode: 8, flags: [.maskCommand])), face: nil), to: .outer(8))
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 8, flags: [.maskCommand])), face: nil)), to: .outer(8))
     store.assign(nil, to: .outer(8))
     store.waitForWrites()
     #expect(SlotStore(url: url)[.outer(8)] == nil)
@@ -73,7 +73,7 @@ import Testing
     let url = temporaryConfigURL()
     let app = SlotAssignment.app(AppRef(bundleIdentifier: "com.apple.Safari", name: "Safari"))
     let store = SlotStore(url: url)
-    store.assign(app, to: .inner(3))
+    store.assign(Slot(app), to: .inner(3))
     store.swap(.inner(3), with: .outer(5))
     store.waitForWrites()
 
@@ -89,8 +89,8 @@ import Testing
     let app = SlotAssignment.app(AppRef(bundleIdentifier: "com.apple.Safari", name: "Safari"))
     let shortcut = SlotAssignment.action(.shortcut(Shortcut(keyCode: 8, flags: [.maskCommand])), face: .emoji("✂️"))
     let store = SlotStore(url: url)
-    store.assign(app, to: .center)
-    store.assign(shortcut, to: .inner(1))
+    store.assign(Slot(app), to: .center)
+    store.assign(Slot(shortcut), to: .inner(1))
     store.swap(.center, with: .inner(1))
     store.waitForWrites()
 
@@ -103,9 +103,9 @@ import Testing
 @Test func onlyAnOuterAssignmentTurnsOnHasOuterRingAssignment() {
     let store = SlotStore(url: temporaryConfigURL())
     #expect(!store.hasOuterRingAssignment)
-    store.assign(.action(.shortcut(Shortcut(keyCode: 8, flags: [])), face: nil), to: .inner(1))
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 8, flags: [])), face: nil)), to: .inner(1))
     #expect(!store.hasOuterRingAssignment)
-    store.assign(.action(.shortcut(Shortcut(keyCode: 8, flags: [])), face: nil), to: .outer(1))
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 8, flags: [])), face: nil)), to: .outer(1))
     #expect(store.hasOuterRingAssignment)
     store.assign(nil, to: .outer(1))
     #expect(!store.hasOuterRingAssignment)
@@ -114,9 +114,9 @@ import Testing
 @Test func aSaveWritesTheV4RingsShape() throws {
     let url = temporaryConfigURL()
     let store = SlotStore(url: url)
-    store.assign(.action(.shortcut(Shortcut(keyCode: 8, flags: [.maskCommand])), face: nil), to: .center)
-    store.assign(.action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: nil), to: .inner(1))
-    store.assign(.action(.shortcut(Shortcut(keyCode: 2, flags: [])), face: nil), to: .outer(16))
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 8, flags: [.maskCommand])), face: nil)), to: .center)
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: nil)), to: .inner(1))
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 2, flags: [])), face: nil)), to: .outer(16))
     store.waitForWrites()
 
     let data = try Data(contentsOf: url)
@@ -260,7 +260,7 @@ import Testing
     let url = temporaryConfigURL()
     let store = SlotStore(url: url)
     for n in SlotID.innerNumbers {
-        store.assign(.action(.shortcut(Shortcut(keyCode: UInt16(n), flags: [.maskCommand])), face: nil), to: .inner(n))
+        store.assign(Slot(.action(.shortcut(Shortcut(keyCode: UInt16(n), flags: [.maskCommand])), face: nil)), to: .inner(n))
     }
     store.waitForWrites()
     let reopened = SlotStore(url: url)
@@ -417,7 +417,7 @@ import Testing
     try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
 
     let store = SlotStore(url: link)
-    store.assign(.action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: .emoji("🙂")), to: .center)
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: .emoji("🙂"))), to: .center)
     store.waitForWrites()
 
     let attributes = try FileManager.default.attributesOfItem(atPath: link.path)
@@ -457,4 +457,108 @@ import Testing
     #expect(store.triggers == [.shortcut])
     #expect(store.triggerShortcut == .hyper)
     try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func aPreviousAppAssignmentSurvivesAReopen() throws {
+    let url = temporaryConfigURL()
+    let store = SlotStore(url: url)
+    store.assign(Slot(.previousApp), to: .inner(1))
+    store.waitForWrites()
+
+    #expect(SlotStore(url: url)[.inner(1)] == .previousApp)
+    #expect(try String(contentsOf: url, encoding: .utf8).contains(#""kind" : "previousApp""#))
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func aSlotColorSurvivesAReopenForEveryKindAndTheCentre() throws {
+    let url = temporaryConfigURL()
+    let store = SlotStore(url: url)
+    store.assign(Slot(.app(AppRef(bundleIdentifier: "com.apple.Safari", name: "Safari")), color: .blue), to: .inner(1))
+    store.assign(Slot(.previousApp, color: .teal), to: .inner(2))
+    store.assign(Slot(.action(.appleScript("beep"), face: .emoji("🔔")), color: .pink), to: .outer(3))
+    store.assign(Slot(.action(.appleScript("beep"), face: .emoji("🔔")), color: .red), to: .center)
+    store.assign(Slot(.previousApp), to: .inner(3))
+    store.waitForWrites()
+
+    let reopened = SlotStore(url: url)
+    #expect(reopened.slots[.inner(1)]?.color == .blue)
+    #expect(reopened.slots[.inner(2)]?.color == .teal)
+    #expect(reopened.slots[.outer(3)]?.color == .pink)
+    #expect(reopened.slots[.center]?.color == .red)
+    #expect(reopened.slots[.inner(3)]?.color == nil)
+    #expect(reopened[.outer(3)] == .action(.appleScript("beep"), face: .emoji("🔔")))
+    let json = try String(contentsOf: url, encoding: .utf8)
+    #expect(json.contains(#""color" : "blue""#))
+    #expect(json.components(separatedBy: #""color""#).count == 5)
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func aMissingColorKeyLoadsAsNoColor() throws {
+    let url = temporaryConfigURL()
+    try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(#"{"version":4,"rings":[{},{"1":{"kind":"previousApp"}},{}]}"#.utf8).write(to: url)
+
+    let store = SlotStore(url: url)
+    #expect(store[.inner(1)] == .previousApp)
+    #expect(store.slots[.inner(1)]?.color == nil)
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func anUnknownColorNameLoadsAsNoColorAndKeepsTheSlot() throws {
+    let url = temporaryConfigURL()
+    try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(
+        #"""
+        {"version":4,"rings":[{},
+        {"1":{"kind":"previousApp","color":"chartreuse"},"2":{"kind":"previousApp","color":7},"3":{"kind":"previousApp","color":"green"}},
+        {}]}
+        """#.utf8
+    ).write(to: url)
+
+    let store = SlotStore(url: url)
+    #expect(store[.inner(1)] == .previousApp)
+    #expect(store.slots[.inner(1)]?.color == nil)
+    #expect(store[.inner(2)] == .previousApp)
+    #expect(store.slots[.inner(2)]?.color == nil)
+    #expect(store.slots[.inner(3)]?.color == .green)
+    #expect(!FileManager.default.fileExists(atPath: url.appendingPathExtension("broken").path))
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func movingASlotMovesItsColorWithIt() {
+    let url = temporaryConfigURL()
+    let store = SlotStore(url: url)
+    store.assign(Slot(.previousApp, color: .orange), to: .inner(1))
+    store.assign(Slot(.action(.appleScript("beep"), face: .emoji("🔔"))), to: .inner(2))
+    store.swap(.inner(1), with: .inner(2))
+    #expect(store.slots[.inner(2)]?.color == .orange)
+    #expect(store.slots[.inner(1)]?.color == nil)
+
+    store.swap(.inner(2), with: .outer(4))
+    store.waitForWrites()
+    let reopened = SlotStore(url: url)
+    #expect(reopened.slots[.outer(4)]?.color == .orange)
+    #expect(reopened.slots[.inner(2)]?.color == nil)
+    #expect(reopened[.outer(4)] == .previousApp)
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func clearingASlotRemovesItsColor() {
+    let url = temporaryConfigURL()
+    let store = SlotStore(url: url)
+    store.assign(Slot(.previousApp, color: .purple), to: .inner(1))
+    store.assign(nil, to: .inner(1))
+    #expect(store.slots[.inner(1)]?.color == nil)
+
+    store.assign(Slot(.previousApp), to: .inner(1))
+    #expect(store.slots[.inner(1)]?.color == nil)
+    store.waitForWrites()
+    #expect(SlotStore(url: url).slots[.inner(1)]?.color == nil)
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func everySlotColorNameIsStable() {
+    #expect(SlotColor.allCases.map(\.rawValue) == ["red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"])
 }

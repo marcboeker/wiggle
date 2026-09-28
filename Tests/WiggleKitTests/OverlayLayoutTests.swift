@@ -221,7 +221,7 @@ private func circularView(showsOuterRing: Bool = true) -> CircularOverlayView {
 @Test @MainActor func hidingEmptySlotsAlsoHidesThemFromHitTesting() {
     let view = circularView(showsOuterRing: false)
     view.showsEmptySlots = false
-    view.slots = [.inner(3): .app(AppRef(bundleIdentifier: "com.apple.calculator", name: "Calculator"))]
+    view.slots = [.inner(3): Slot(.app(AppRef(bundleIdentifier: "com.apple.calculator", name: "Calculator")))]
     let hub = SlotLayout.hub(side: view.bounds.width)
     let radius = (Config.circleHubRadius + Config.circleInnerRingOuterRadius) / 2
 
@@ -233,7 +233,7 @@ private func circularView(showsOuterRing: Bool = true) -> CircularOverlayView {
 @Test @MainActor func rawSlotIDStillFindsHiddenEmptySlots() {
     let view = circularView(showsOuterRing: false)
     view.showsEmptySlots = false
-    view.slots = [.inner(3): .app(AppRef(bundleIdentifier: "com.apple.calculator", name: "Calculator"))]
+    view.slots = [.inner(3): Slot(.app(AppRef(bundleIdentifier: "com.apple.calculator", name: "Calculator")))]
     let hub = SlotLayout.hub(side: view.bounds.width)
     let radius = (Config.circleHubRadius + Config.circleInnerRingOuterRadius) / 2
 

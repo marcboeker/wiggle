@@ -28,7 +28,7 @@ the wheel opens. Other triggers came later, but the name stayed.
 - **No hunting for a hotkey** — the wheel opens right where the pointer is.
 - **More than one way in** — shake the pointer, bump a screen edge, tap or swipe the trackpad, or press a shortcut.
 - **25 slots** — a center slot, 8 inner, and 16 outer, the outer ring hidden until assigned.
-- **Any kind of action** — a shortcut, an app, an Apple Shortcut, or an AppleScript.
+- **Any kind of action** — a shortcut, an app, the previous app, an Apple Shortcut, or an AppleScript.
 - **Stays out of the way** — no Dock icon, an optional menu bar item, no stolen keyboard focus.
 - **Plain JSON config** — one file you can read, edit, or sync yourself.
 
@@ -85,10 +85,15 @@ drag it to move it to a different slot.
 | --- | --- | --- |
 | Keyboard shortcut | Sends a key combination, for example `cmd+shift+4`, to the app in front. | `shortcut` |
 | App | Opens an app, or brings it to the front. | `app` |
+| Previous App | Brings the app you used before the app in front back to the front. | `previousApp` |
 | Apple Shortcut | Runs a shortcut from the Shortcuts app. | `appleShortcut` |
 | AppleScript | Runs an AppleScript. | `appleScript` |
 
-An app slot shows the app icon. Every other slot shows an emoji or an image that you select.
+An app slot shows the app icon, and a previous app slot shows the icon of the previous app. Every
+other slot shows an emoji or an image that you select.
+
+Every slot can also have a color, one of the eight system colors, chosen in the slot editor. It tints the slot
+and moves with it when you drag it. In the config it is a `"color"` key, such as `"color": "blue"`.
 
 <p align="center">
   <img src="docs/settings_actions.png" alt="The Actions page in Settings, with the wheel editor" width="600">

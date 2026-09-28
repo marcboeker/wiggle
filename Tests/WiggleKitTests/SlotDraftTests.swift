@@ -119,3 +119,25 @@ private func redImage() throws -> SlotImage {
     #expect(draft.tab == .appleShortcut)
     #expect(draft.assignment == nil)
 }
+
+@Test func thePreviousAppTabSavesWithoutAFace() {
+    var draft = SlotDraft(nil)
+    draft.tab = .previousApp
+    #expect(draft.assignment == .previousApp)
+    #expect(SlotDraft(.previousApp).tab == .previousApp)
+}
+
+@Test func theColorSurvivesChangingTheActionType() {
+    var draft = SlotDraft(.action(.shortcut(rocketKey), face: .emoji("🚀")), color: .green)
+    draft.tab = .appleScript
+    draft.script = "beep"
+    #expect(draft.slot == Slot(.action(.appleScript("beep"), face: .emoji("🚀")), color: .green))
+    draft.tab = .previousApp
+    #expect(draft.slot == Slot(.previousApp, color: .green))
+}
+
+@Test func aDraftWithoutAColorSavesWithoutOne() {
+    var draft = SlotDraft(.app(safari), color: .red)
+    draft.color = nil
+    #expect(draft.slot == Slot(.app(safari)))
+}

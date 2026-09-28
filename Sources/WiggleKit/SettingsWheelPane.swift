@@ -200,9 +200,9 @@ final class WheelPaneViewController: NSViewController {
 
     private func presentEditor(for id: SlotID) {
         guard let window = view.window else { return }
-        let sheet = SlotEditorSheet(label: id.label, assignment: store[id])
+        let sheet = SlotEditorSheet(label: id.label, slot: store.slots[id])
         activeSheet = sheet
-        sheet.onSave = { [weak self] assignment in self?.store.assign(assignment, to: id) }
+        sheet.onSave = { [weak self] slot in self?.store.assign(slot, to: id) }
         sheet.onClear = { [weak self] in self?.store.assign(nil, to: id) }
         sheet.present(on: window) { [weak self] in
             self?.activeSheet = nil

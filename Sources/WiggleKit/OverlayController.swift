@@ -64,6 +64,11 @@ final class OverlayController {
     private let backdrop: NSVisualEffectView
     private let container: NSView
     private let view: CircularOverlayView
+    private let recentApps = RecentAppsTracker()
+
+    /// Taken when the wheel opens, so a previous app slot runs the app it
+    /// shows.
+    private var previousApp: NSRunningApplication?
 
     var onClose: (() -> Void)?
     var onOpenSettings: (() -> Void)?
@@ -145,6 +150,8 @@ final class OverlayController {
         view.showsOuterRing = showsOuterRing
         // An overlay with every slot hidden would still hold the keyboard.
         view.showsEmptySlots = store.slots.isEmpty
+        previousApp = recentApps.previous
+        view.previousAppIcon = previousApp?.icon
         view.slots = store.slots
         // After the slots: the backdrop is clipped to their shapes.
         resize(to: size)
@@ -245,8 +252,8 @@ final class OverlayController {
         hide(.ranASlot)
         // A window or menu that the slot opens must not appear behind the
         // wheel.
-        DispatchQueue.main.asyncAfter(deadline: .now() + Config.keystrokeDelay) {
-            assignment.run()
+        DispatchQueue.main.asyncAfter(deadline: .now() + Config.keystrokeDelay) { [previousApp] in
+            assignment.run(previousApp: previousApp)
         }
     }
 

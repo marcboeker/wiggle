@@ -3,9 +3,23 @@ import AppKit
 /// An app always shows its own icon, so it carries no face.
 enum SlotAssignment: Equatable {
     case app(AppRef)
+    /// The app that was in front before the current one, with its icon.
+    case previousApp
     /// `face` is nil only for a slot from a config written before every
     /// non-app slot needed one.
     case action(SlotAction, face: SlotFace?)
+}
+
+/// What a slot holds. The color travels with the assignment, so moving or
+/// clearing a slot can never leave one behind.
+struct Slot: Equatable {
+    var assignment: SlotAssignment
+    var color: SlotColor?
+
+    init(_ assignment: SlotAssignment, color: SlotColor? = nil) {
+        self.assignment = assignment
+        self.color = color
+    }
 }
 
 enum SlotAction: Equatable {
@@ -57,7 +71,7 @@ struct AppleShortcutRef: Codable, Equatable {
 /// An image face encodes nothing and decodes as no face: its PNG lives next
 /// to the config, where `SlotStore` reads and writes it.
 extension SlotAssignment: Codable {
-    private enum Kind: String, Codable { case shortcut, app, appleShortcut, appleScript }
+    private enum Kind: String, Codable { case shortcut, app, previousApp, appleShortcut, appleScript }
     /// The key stays `label` from before emoji replaced free-text labels.
     private enum CodingKeys: String, CodingKey {
         case kind, shortcut, emoji = "label", app, appleShortcut, script
@@ -69,6 +83,9 @@ extension SlotAssignment: Codable {
         switch try container.decode(Kind.self, forKey: .kind) {
         case .app:
             self = .app(try container.decode(AppRef.self, forKey: .app))
+            return
+        case .previousApp:
+            self = .previousApp
             return
         case .shortcut:
             action = .shortcut(try container.decode(Shortcut.self, forKey: .shortcut))
@@ -87,6 +104,8 @@ extension SlotAssignment: Codable {
         case .app(let ref):
             try container.encode(Kind.app, forKey: .kind)
             try container.encode(ref, forKey: .app)
+        case .previousApp:
+            try container.encode(Kind.previousApp, forKey: .kind)
         case .action(let action, let face):
             switch action {
             case .shortcut(let shortcut):
@@ -104,15 +123,33 @@ extension SlotAssignment: Codable {
     }
 }
 
+/// The color sits next to the assignment's own keys. A name this version does
+/// not know decodes as no color, so that the slot still loads.
+extension Slot: Codable {
+    private enum CodingKeys: String, CodingKey { case color }
+
+    init(from decoder: Decoder) throws {
+        assignment = try SlotAssignment(from: decoder)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        color = (try? container.decodeIfPresent(String.self, forKey: .color)).flatMap(SlotColor.init(rawValue:))
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try assignment.encode(to: encoder)
+        guard let color else { return }
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(color.rawValue, forKey: .color)
+    }
+}
+
 extension SlotAssignment {
-    func run() {
+    /// `previousApp` is `nil` while no other app was in front yet.
+    func run(previousApp: NSRunningApplication?) {
         switch self {
         case .app(let ref):
-            guard let url = ref.url else {
-                NSLog("wiggle: cannot find \(ref.name) (\(ref.bundleIdentifier))")
-                return
-            }
-            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+            openApp(at: ref.url, orLog: "cannot find \(ref.name) (\(ref.bundleIdentifier))")
+        case .previousApp:
+            openApp(at: previousApp?.bundleURL, orLog: "no previous app to switch to")
         case .action(.shortcut(let shortcut), _):
             KeyPoster.post(shortcut)
         case .action(.appleShortcut(let ref), _):
@@ -125,6 +162,14 @@ extension SlotAssignment {
 }
 
 private let shortcutsTool = "/usr/bin/shortcuts"
+
+private func openApp(at url: URL?, orLog message: @autoclosure () -> String) {
+    guard let url else {
+        NSLog("wiggle: \(message())")
+        return
+    }
+    NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+}
 
 @discardableResult
 private func launch(_ path: String, _ arguments: [String], stdin: Data? = nil, stdout: Pipe? = nil) -> Process? {
