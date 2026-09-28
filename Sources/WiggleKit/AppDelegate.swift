@@ -180,7 +180,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 let now = CFAbsoluteTimeGetCurrent()
                 if canOpen(at: now) {
-                    if let point = detectors.lazy.compactMap({ $0.feed(location, at: now) }).first {
+                    if let point = firstCompleted({ $0.feed(location, at: now) }) {
                         overlay.show(at: point)
                         // `show` may have warped the pointer, and this event
                         // still carries the pre-warp location.
@@ -346,8 +346,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         isStopCheckPending = false
         guard canOpen(at: now) else { return }
-        if let point = detectors.lazy.compactMap({ $0.pointerStopped(at: self.lastPointerMove) }).first {
+        if let point = firstCompleted({ $0.pointerStopped(at: lastPointerMove) }) {
             overlay.show(at: point)
         }
+    }
+
+    /// Asks each detector in turn and stops at the first completed gesture.
+    /// Each detector is asked at most once: asking changes its state, and
+    /// `lazy.compactMap(_:).first` asks the matching one twice.
+    private func firstCompleted(_ ask: (any TriggerDetector) -> CGPoint?) -> CGPoint? {
+        for detector in detectors {
+            if let point = ask(detector) { return point }
+        }
+        return nil
     }
 }
