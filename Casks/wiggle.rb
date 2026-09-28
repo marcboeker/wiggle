@@ -2,12 +2,12 @@ cask "wiggle" do
   version "0.1.0"
 
   on_arm do
-    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 "816556d888f9bfdd126fc566b9cbd58356ba9aedccae08d3016dfc164570eca6"
     url "https://github.com/marcboeker/wiggle/releases/download/v#{version}/Wiggle-macos-arm64.zip"
   end
 
   on_intel do
-    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+    sha256 "1be9c5867e856885d56cc093cc92ad3706c7a88fe5228eef51bff4240166a145"
     url "https://github.com/marcboeker/wiggle/releases/download/v#{version}/Wiggle-macos-amd64.zip"
   end
 
