@@ -40,11 +40,8 @@ macOS 14 (Sonoma) or later. **Install via Homebrew:**
 brew tap marcboeker/wiggle https://github.com/marcboeker/wiggle
 brew trust --cask marcboeker/wiggle/wiggle
 brew install --cask wiggle
+open /Applications/Wiggle.app
 ```
-
-The app is ad-hoc signed, so Gatekeeper blocks it the first time you open it — click **Done**, then
-open **System Settings → Privacy & Security** and **Open Anyway**, or clear the quarantine flag:
-`xattr -dr com.apple.quarantine /Applications/Wiggle.app`.
 
 **Or build it from source:**
 

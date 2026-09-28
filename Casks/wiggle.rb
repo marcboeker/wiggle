@@ -24,6 +24,14 @@ cask "wiggle" do
 
   app "Wiggle.app"
 
+  postflight_steps do
+    run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/Wiggle.app"]
+  end
+
+  # Quit the running app before Homebrew replaces the bundle on upgrade/uninstall — otherwise
+  # the update clobbers a live process.
+  uninstall quit: "com.marcboeker.wiggle"
+
   zap trash: [
     "~/.config/wiggle",
     "~/Library/Preferences/com.marcboeker.wiggle.plist",
