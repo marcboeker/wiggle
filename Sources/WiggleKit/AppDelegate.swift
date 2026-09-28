@@ -117,6 +117,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.image = icon
 
         let menu = NSMenu()
+        let versionItem = NSMenuItem(title: "Wiggle \(appVersion)", action: nil, keyEquivalent: "")
+        versionItem.isEnabled = false
+        menu.addItem(versionItem)
+        menu.addItem(.separator())
         let settingsItem = NSMenuItem(
             title: "Settings…", action: #selector(showSettingsFromMenuBar), keyEquivalent: ",")
         settingsItem.target = self
@@ -127,6 +131,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         item.menu = menu
 
         statusItem = item
+    }
+
+    /// The release tag, stamped into the bundle by `make bundle VERSION=…`;
+    /// "main" for a local build.
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "main"
     }
 
     @objc private func showSettingsFromMenuBar() {
