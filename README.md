@@ -26,7 +26,7 @@ the wheel opens. Other triggers came later, but the name stayed.
 ## Why Wiggle
 
 - **No hunting for a hotkey** — the wheel opens right where the pointer is.
-- **More than one way in** — shake the pointer, bump a screen edge, or tap or swipe the trackpad.
+- **More than one way in** — shake the pointer, bump a screen edge, tap or swipe the trackpad, or press a shortcut.
 - **25 slots** — a center slot, 8 inner, and 16 outer, the outer ring hidden until assigned.
 - **Any kind of action** — a shortcut, an app, an Apple Shortcut, or an AppleScript.
 - **Stays out of the way** — no Dock icon, an optional menu bar item, no stolen keyboard focus.
@@ -70,6 +70,7 @@ Settings. Only **Shake the pointer** is on by default.
 | Tap with four fingers | Tap the trackpad with four fingers at once. The wheel opens at the pointer. | `fourFingerTap` |
 | Swipe up with four fingers | Swipe up on the trackpad with four fingers. The wheel opens when the fingers lift. | `fourFingerSwipeUp` |
 | Swipe down with four fingers | Swipe down on the trackpad with four fingers. The wheel opens when the fingers lift. | `fourFingerSwipeDown` |
+| Press a shortcut | Press a key combination, or only modifiers such as the Hyper key. The wheel opens at the pointer. | `shortcut` |
 
 macOS also uses the four-finger vertical swipes for Mission Control and App Exposé. To use them for
 Wiggle, switch them off in **System Settings → Trackpad → More Gestures**.
@@ -126,12 +127,14 @@ image face, if a slot has one, is a PNG next to it in `~/.config/wiggle/icons/`.
     { "1": { "kind": "shortcut", "label": "📷", "shortcut": "cmd+shift+4" } },
     {}
   ],
-  "triggers": ["wiggle"]
+  "triggerShortcut": "cmd+ctrl+alt+shift",
+  "triggers": ["wiggle", "shortcut"]
 }
 ```
 
 `rings` holds one object per ring (center, inner, outer) keyed by slot number, with no key for an
-empty slot; `triggers` lists the enabled gestures — without it, only `wiggle` is on.
+empty slot; `triggers` lists the enabled gestures — without it, only `wiggle` is on. `triggerShortcut` is the
+shortcut for the `shortcut` trigger.
 
 ## Build and develop
 

@@ -10,6 +10,7 @@ struct SettingsActions {
     var openLoginItemsSettings: () -> Void
     var setShowsMenuBarItem: (Bool) -> Void
     var setTriggers: (Set<TriggerKind>) -> Void
+    var setTriggerShortcut: (TriggerShortcut) -> Void
     var openTrackpadSettings: () -> Void
     var setOverlayAppearance: (OverlayAppearance) -> Void
 }
@@ -203,10 +204,17 @@ struct TriggersPage: View {
             Section {
                 ForEach(TriggerKind.allCases, id: \.self) { kind in
                     SettingsRow(title: kind.title, description: kind.description) {
-                        Toggle(kind.title, isOn: binding(for: kind))
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .disabled(model.triggers == [kind])
+                        HStack(spacing: 12) {
+                            if kind == .shortcut {
+                                TriggerShortcutField(
+                                    shortcut: model.triggerShortcut,
+                                    onChange: actions.setTriggerShortcut)
+                            }
+                            Toggle(kind.title, isOn: binding(for: kind))
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .disabled(model.triggers == [kind])
+                        }
                     }
                 }
             } header: {

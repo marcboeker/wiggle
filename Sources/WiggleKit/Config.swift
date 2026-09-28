@@ -48,6 +48,10 @@ enum Config {
     /// horizontally, which allows a slant of about 27 degrees off vertical.
     static let swipeVerticalRatio: CGFloat = 2
 
+    /// Longest time a chord trigger may stay held before its release. A
+    /// longer hold was meant for a key or a click that did not come.
+    static let chordMaxHold: TimeInterval = 1.0
+
     /// Gap between the wheel's outer edge and the panel border.
     static let wheelPadding: CGFloat = 12
     /// Smallest gap between the overlay and the edge of the screen.

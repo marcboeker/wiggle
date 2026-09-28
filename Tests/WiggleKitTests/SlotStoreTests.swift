@@ -425,3 +425,36 @@ import Testing
     #expect(SlotStore(url: target)[.center] != nil)
     try? FileManager.default.removeItem(at: directory)
 }
+
+@Test func aFreshStoreUsesTheHyperKey() {
+    #expect(SlotStore(url: temporaryConfigURL()).triggerShortcut == .hyper)
+}
+
+@Test func theTriggerShortcutReachesTheNextStore() throws {
+    let url = temporaryConfigURL()
+    let store = SlotStore(url: url)
+    let shortcut = try #require(TriggerShortcut(shortcutString: "ctrl+alt+space"))
+    store.setTriggers([.shortcut])
+    store.setTriggerShortcut(shortcut)
+    store.waitForWrites()
+
+    let next = SlotStore(url: url)
+    #expect(next.triggers == [.shortcut])
+    #expect(next.triggerShortcut == shortcut)
+    let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+    #expect(json?["triggerShortcut"] as? String == "ctrl+alt+space")
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func anUnreadableTriggerShortcutFallsBackToHyper() throws {
+    let url = temporaryConfigURL()
+    try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(#"{"version":4,"rings":[{},{},{}],"triggers":["shortcut"],"triggerShortcut":"k"}"#.utf8)
+        .write(to: url)
+
+    let store = SlotStore(url: url)
+    #expect(store.triggers == [.shortcut])
+    #expect(store.triggerShortcut == .hyper)
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}

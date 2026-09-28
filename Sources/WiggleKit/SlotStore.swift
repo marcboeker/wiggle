@@ -13,6 +13,7 @@ final class SlotStore {
         var version: Int
         var rings: [[Int: LenientAssignment]]
         var triggers: [String]?
+        var triggerShortcut: String?
         var overlayOpacity: CGFloat?
         var showMenuBarItem: Bool?
         var overlayAppearance: String?
@@ -64,6 +65,9 @@ final class SlotStore {
     /// Never empty: without a trigger the overlay cannot open.
     private(set) var triggers = TriggerKind.defaults
 
+    /// Only in use while `triggers` holds `.shortcut`.
+    private(set) var triggerShortcut = TriggerShortcut.hyper
+
     private(set) var overlayOpacity = Config.defaultOverlayOpacity
 
     private(set) var showsMenuBarItem = true
@@ -104,6 +108,11 @@ final class SlotStore {
         save()
     }
 
+    func setTriggerShortcut(_ shortcut: TriggerShortcut) {
+        triggerShortcut = shortcut
+        save()
+    }
+
     func setOverlayOpacity(_ opacity: CGFloat) {
         overlayOpacity = SlotStore.clampedOpacity(opacity)
         save()
@@ -138,6 +147,7 @@ final class SlotStore {
             }
             slots = SlotStore.clampedRings(rings)
             triggers = SlotStore.knownTriggers(file.triggers)
+            triggerShortcut = file.triggerShortcut.flatMap(TriggerShortcut.init(shortcutString:)) ?? .hyper
             overlayOpacity = file.overlayOpacity.map(SlotStore.clampedOpacity) ?? Config.defaultOverlayOpacity
             showsMenuBarItem = file.showMenuBarItem ?? true
             overlayAppearance = file.overlayAppearance.flatMap(OverlayAppearance.init(rawValue:))
@@ -248,6 +258,7 @@ final class SlotStore {
         let file = File(
             version: 4, rings: rings,
             triggers: TriggerKind.allCases.filter { triggers.contains($0) }.map(\.rawValue),
+            triggerShortcut: triggerShortcut.shortcutString,
             overlayOpacity: overlayOpacity, showMenuBarItem: showsMenuBarItem,
             overlayAppearance: overlayAppearance.rawValue)
         guard let data = try? encoder.encode(file) else { return }

@@ -10,6 +10,7 @@ final class SettingsModel {
     var overlayOpacity = Config.defaultOverlayOpacity
     var overlayAppearance = Config.defaultOverlayAppearance
     var triggers = TriggerKind.defaults
+    var triggerShortcut = TriggerShortcut.hyper
     var showsMenuBarItem = true
     var loginItemStatus = SMAppService.Status.notRegistered
     var showsSwipeNote = false
@@ -51,6 +52,7 @@ final class SettingsWindowController: NSWindowController {
             openLoginItemsSettings: { SMAppService.openSystemSettingsLoginItems() },
             setShowsMenuBarItem: { [weak self] in self?.setShowsMenuBarItem($0) },
             setTriggers: { [weak self] in self?.setTriggers($0) },
+            setTriggerShortcut: { [weak self] in self?.setTriggerShortcut($0) },
             openTrackpadSettings: { SettingsWindowController.openTrackpadSettings() },
             setOverlayAppearance: { [weak self] in self?.setOverlayAppearance($0) })
         let root = SettingsRootView(model: model, wheelPane: wheelPane, actions: actions)
@@ -81,6 +83,7 @@ final class SettingsWindowController: NSWindowController {
         model.overlayOpacity = store.overlayOpacity
         model.overlayAppearance = store.overlayAppearance
         model.triggers = store.triggers
+        model.triggerShortcut = store.triggerShortcut
         model.showsMenuBarItem = store.showsMenuBarItem
         refreshLoginItemStatus()
         refreshSwipeNote()
@@ -132,6 +135,12 @@ final class SettingsWindowController: NSWindowController {
         store.setTriggers(kinds)
         model.triggers = store.triggers
         refreshSwipeNote()
+        onTriggersChanged?()
+    }
+
+    private func setTriggerShortcut(_ shortcut: TriggerShortcut) {
+        store.setTriggerShortcut(shortcut)
+        model.triggerShortcut = shortcut
         onTriggersChanged?()
     }
 

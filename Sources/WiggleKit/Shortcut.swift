@@ -17,21 +17,23 @@ struct Shortcut: Equatable {
     }
 }
 
-/// The config file's spelling of a shortcut, for example `cmd+ctrl+shift+4`.
-/// Modifier order does not matter on read.
-extension Shortcut {
+/// The config file's spelling of a key combination, for example
+/// `cmd+ctrl+shift+4`, or `cmd+ctrl+alt+shift` without a key. Modifier order
+/// does not matter on read.
+enum ShortcutSpelling {
 
-    var shortcutString: String {
+    static func string(flags: CGEventFlags, keyCode: UInt16?) -> String {
         var parts: [String] = []
         if flags.contains(.maskCommand) { parts.append("cmd") }
         if flags.contains(.maskControl) { parts.append("ctrl") }
         if flags.contains(.maskAlternate) { parts.append("alt") }
         if flags.contains(.maskShift) { parts.append("shift") }
-        parts.append(KeyNames.canonicalName(for: keyCode))
+        if let keyCode { parts.append(KeyNames.canonicalName(for: keyCode)) }
         return parts.joined(separator: "+")
     }
 
-    init?(shortcutString raw: String) {
+    /// `keyCode` is `nil` when the string names only modifiers.
+    static func parse(_ raw: String) -> (flags: CGEventFlags, keyCode: UInt16?)? {
         let tokens = raw.split(separator: "+").map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
         guard !tokens.isEmpty else { return nil }
 
@@ -48,7 +50,18 @@ extension Shortcut {
                 keyToken = token
             }
         }
-        guard let keyToken, let keyCode = KeyNames.keyCode(forCanonicalName: keyToken) else { return nil }
+        guard let keyToken else { return (flags, nil) }
+        guard let keyCode = KeyNames.keyCode(forCanonicalName: keyToken) else { return nil }
+        return (flags, keyCode)
+    }
+}
+
+extension Shortcut {
+
+    var shortcutString: String { ShortcutSpelling.string(flags: flags, keyCode: keyCode) }
+
+    init?(shortcutString raw: String) {
+        guard let (flags, keyCode) = ShortcutSpelling.parse(raw), let keyCode else { return nil }
         self.init(keyCode: keyCode, flags: flags)
     }
 }
@@ -116,6 +129,16 @@ enum KeyNames {
         guard name.hasPrefix("keycode") else { return nil }
         return UInt16(name.dropFirst("keycode".count))
     }
+
+    static func isFunctionKey(_ keyCode: UInt16) -> Bool {
+        functionKeyCodes.contains(keyCode)
+    }
+
+    private static let functionKeyCodes: Set<UInt16> = Set(
+        [
+            kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
+            kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20,
+        ].map(UInt16.init))
 
     private static let canonicalKeyTable: [(UInt16, String)] = [
         (UInt16(kVK_ANSI_A), "a"), (UInt16(kVK_ANSI_B), "b"), (UInt16(kVK_ANSI_C), "c"),

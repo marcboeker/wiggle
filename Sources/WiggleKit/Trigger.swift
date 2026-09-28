@@ -14,6 +14,9 @@ protocol TriggerDetector: AnyObject {
     func pointerStopped(at time: TimeInterval) -> CGPoint?
     /// `touches` is empty once the last finger lifted.
     func touchesChanged(_ touches: TouchFrame, pointer: CGPoint, at now: TimeInterval) -> CGPoint?
+    /// A key press that completes a gesture is swallowed.
+    func keyDown(_ keyCode: UInt16, flags: CGEventFlags, pointer: CGPoint) -> CGPoint?
+    func flagsChanged(_ flags: CGEventFlags, pointer: CGPoint, at now: TimeInterval) -> CGPoint?
     /// Forgets a gesture in progress.
     func reset()
 }
@@ -22,6 +25,8 @@ extension TriggerDetector {
     func feed(_ point: CGPoint, at now: TimeInterval) -> CGPoint? { nil }
     func pointerStopped(at time: TimeInterval) -> CGPoint? { nil }
     func touchesChanged(_ touches: TouchFrame, pointer: CGPoint, at now: TimeInterval) -> CGPoint? { nil }
+    func keyDown(_ keyCode: UInt16, flags: CGEventFlags, pointer: CGPoint) -> CGPoint? { nil }
+    func flagsChanged(_ flags: CGEventFlags, pointer: CGPoint, at now: TimeInterval) -> CGPoint? { nil }
 }
 
 /// Whether a finger moved farther than a tap allows from where it landed.
@@ -38,6 +43,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
     case fourFingerTap
     case fourFingerSwipeUp
     case fourFingerSwipeDown
+    case shortcut
 
     /// Enabled when the configuration file names no known trigger.
     static let defaults: Set<TriggerKind> = [.wiggle]
@@ -50,6 +56,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerTap: "Tap with four fingers"
         case .fourFingerSwipeUp: "Swipe up with four fingers"
         case .fourFingerSwipeDown: "Swipe down with four fingers"
+        case .shortcut: "Press a shortcut"
         }
     }
 
@@ -61,6 +68,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerTap: "Tap the trackpad with four fingers at once."
         case .fourFingerSwipeUp: "Swipe up on the trackpad with four fingers."
         case .fourFingerSwipeDown: "Swipe down on the trackpad with four fingers."
+        case .shortcut: "Press a key combination, or press and release only modifiers, such as the Hyper key."
         }
     }
 
@@ -68,19 +76,19 @@ enum TriggerKind: String, CaseIterable, Sendable {
     /// unless the user switched it off in the Trackpad settings.
     var isFourFingerVerticalSwipe: Bool {
         switch self {
-        case .wiggle, .screenEdge, .threeFingerTap, .fourFingerTap: false
+        case .wiggle, .screenEdge, .threeFingerTap, .fourFingerTap, .shortcut: false
         case .fourFingerSwipeUp, .fourFingerSwipeDown: true
         }
     }
 
     var usesTrackpad: Bool {
         switch self {
-        case .wiggle, .screenEdge: false
+        case .wiggle, .screenEdge, .shortcut: false
         case .threeFingerTap, .fourFingerTap, .fourFingerSwipeUp, .fourFingerSwipeDown: true
         }
     }
 
-    func makeDetector() -> any TriggerDetector {
+    func makeDetector(shortcut: TriggerShortcut) -> any TriggerDetector {
         switch self {
         case .wiggle: WiggleDetector()
         case .screenEdge: ScreenEdgeDetector()
@@ -88,6 +96,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerTap: TrackpadTapDetector(fingers: 4)
         case .fourFingerSwipeUp: TrackpadSwipeDetector(fingers: 4, direction: .up)
         case .fourFingerSwipeDown: TrackpadSwipeDetector(fingers: 4, direction: .down)
+        case .shortcut: ShortcutTriggerDetector(shortcut: shortcut)
         }
     }
 }

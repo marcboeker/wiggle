@@ -26,12 +26,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var swallowedKeys: Set<Int64> = []
     private var swallowedButtons: Set<Int64> = []
 
-    /// KeyboardShortcuts posts this when its recorder starts or stops
-    /// holding the keyboard. The library keeps the name internal, so it is
-    /// mirrored here.
-    private static let recorderActiveStatusDidChange = Notification.Name(
-        "KeyboardShortcuts_recorderActiveStatusDidChange")
-
     public override init() { super.init() }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
@@ -45,7 +39,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.onMenuBarItemChanged = { [weak self] in self?.updateStatusItem() }
 
         NotificationCenter.default.addObserver(
-            forName: Self.recorderActiveStatusDidChange, object: nil, queue: .main
+            forName: .recorderActiveStatusDidChange, object: nil, queue: .main
         ) { [weak self] notification in
             let isActive = notification.userInfo?["isActive"] as? Bool ?? false
             MainActor.assumeIsolated { self?.isRecordingShortcut = isActive }
@@ -220,7 +214,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // A key held since before the overlay opened runs nothing, and
             // its release belongs to the app below.
             if isRepeat { return overlay.isVisible ? nil : event }
-            guard overlay.handleKeyDown(event) else { return event }
+            if !overlay.isVisible {
+                // Every press reaches the detectors, as it spoils a chord
+                // trigger in progress.
+                let now = CFAbsoluteTimeGetCurrent()
+                let point = firstCompleted {
+                    $0.keyDown(UInt16(keyCode), flags: event.flags, pointer: event.location)
+                }
+                guard let point, canOpen(at: now) else { return event }
+                overlay.show(at: point)
+            } else if !overlay.handleKeyDown(event) {
+                return event
+            }
             swallowedKeys.insert(keyCode)
             return nil
 
@@ -232,7 +237,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // A held modifier could switch the input source in the app below.
             // The event carries the absolute modifier state, so the app is in
             // step again with the first one it gets after the overlay closes.
-            return overlay.isVisible ? nil : event
+            guard !overlay.isVisible else { return nil }
+            // The release that completes a chord trigger still reaches the
+            // app below, which saw the modifiers go down.
+            let now = CFAbsoluteTimeGetCurrent()
+            if let point = firstCompleted({ $0.flagsChanged(event.flags, pointer: event.location, at: now) }),
+                canOpen(at: now)
+            {
+                overlay.show(at: point)
+            }
+            return event
 
         case .scrollWheel:
             let scrollPhase = event.getIntegerValueField(.scrollWheelEventScrollPhase)
@@ -294,7 +308,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Drops every gesture in progress.
     private func rebuildDetectors() {
         let kinds = TriggerKind.allCases.filter { store.triggers.contains($0) }
-        detectors = kinds.map { $0.makeDetector() }
+        detectors = kinds.map { $0.makeDetector(shortcut: store.triggerShortcut) }
         swipeEventFilter = kinds.contains(where: \.isFourFingerVerticalSwipe) ? SwipeEventFilter(fingers: 4) : nil
         needsTouches = kinds.contains(where: \.usesTrackpad)
     }
