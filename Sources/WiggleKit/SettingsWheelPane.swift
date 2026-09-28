@@ -42,7 +42,7 @@ private final class SlotHitTarget: NSButton {
 /// drag's type, so a drag over any hit target, or between them, lands here.
 @MainActor
 private final class WheelDropView: NSView {
-    static let slotType = NSPasteboard.PasteboardType("com.marcboeker.wiggle.slot")
+    static let slotType = NSPasteboard.PasteboardType("net.at6.wiggle.slot")
 
     var slotAt: ((NSPoint) -> SlotID?)?
     var onTargetChanged: ((SlotID?) -> Void)?

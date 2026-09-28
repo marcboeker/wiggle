@@ -1,5 +1,5 @@
 APP_NAME  := Wiggle
-BUNDLE_ID := com.marcboeker.wiggle
+BUNDLE_ID := net.at6.wiggle
 CONFIG    := release
 VERSION   ?= main
 
