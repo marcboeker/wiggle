@@ -68,7 +68,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerTap: "Tap the trackpad with four fingers at once."
         case .fourFingerSwipeUp: "Swipe up on the trackpad with four fingers."
         case .fourFingerSwipeDown: "Swipe down on the trackpad with four fingers."
-        case .shortcut: "Press a key combination, or press and release only modifiers, such as the Hyper key."
+        case .shortcut: "Hold a key combination, or only modifiers such as the Hyper key, to show the wheel. Let go to close it."
         }
     }
 

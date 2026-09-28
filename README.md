@@ -89,7 +89,7 @@ Settings. Only **Shake the pointer** is on by default.
 - **Bump a screen edge** — push the pointer against a screen edge, pull back, and stop.
 - **Tap the trackpad** with three or four fingers.
 - **Swipe up or down** on the trackpad with four fingers. The wheel opens when the fingers lift.
-- **Press a shortcut** — a key combination, or only modifiers such as the Hyper key.
+- **Hold a shortcut** — a key combination, or only modifiers such as the Hyper key. The wheel shows while you hold it and closes when you let go.
 
 The wheel opens at the pointer. macOS uses the four-finger vertical swipes for Mission Control and
 App Exposé. To use them for Wiggle, switch them off in **System Settings → Trackpad → More

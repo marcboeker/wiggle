@@ -1,9 +1,8 @@
 import AppKit
 import KeyboardShortcuts
 
-/// The key combination that opens the overlay. Without a key it is a chord
-/// of modifiers alone, such as the Hyper key, which opens the overlay when
-/// released.
+/// The key combination that opens the overlay while it is held. Without a
+/// key it is a chord of modifiers alone, such as the Hyper key.
 struct TriggerShortcut: Equatable {
     let keyCode: UInt16?
     let flags: CGEventFlags
@@ -45,41 +44,51 @@ struct TriggerShortcut: Equatable {
     }
 }
 
-/// Opens the overlay on the trigger shortcut. A chord of modifiers must be
-/// released without a key or a click in between, so the same modifiers
-/// still work with a key for other shortcuts.
+/// Opens the overlay while the trigger shortcut is held, and reports when
+/// the user lets it go, which closes the overlay.
 final class ShortcutTriggerDetector: TriggerDetector {
 
     private let shortcut: TriggerShortcut
-    /// When every modifier of the chord was last held at once.
-    private var chordHeld: TimeInterval?
+    /// Whether the shortcut opened the overlay and is still down.
+    private(set) var isHeld = false
 
     init(shortcut: TriggerShortcut) {
         self.shortcut = shortcut
     }
 
     func keyDown(_ keyCode: UInt16, flags: CGEventFlags, pointer: CGPoint) -> CGPoint? {
-        chordHeld = nil
-        let matches = keyCode == shortcut.keyCode && flags.intersection(Shortcut.allowedModifiers) == shortcut.flags
-        return matches ? pointer : nil
-    }
-
-    func flagsChanged(_ flags: CGEventFlags, pointer: CGPoint, at now: TimeInterval) -> CGPoint? {
-        guard shortcut.keyCode == nil else { return nil }
-        let held = flags.intersection(Shortcut.allowedModifiers)
-        if held == shortcut.flags {
-            chordHeld = now
+        guard keyCode == shortcut.keyCode, flags.intersection(Shortcut.allowedModifiers) == shortcut.flags else {
             return nil
         }
-        // Modifiers of the chord come up one after another.
-        if held.isSubset(of: shortcut.flags), !held.isEmpty { return nil }
-        defer { chordHeld = nil }
-        guard held.isEmpty, let chordHeld, now - chordHeld <= Config.chordMaxHold else { return nil }
+        isHeld = true
         return pointer
     }
 
+    func flagsChanged(_ flags: CGEventFlags, pointer: CGPoint, at now: TimeInterval) -> CGPoint? {
+        guard shortcut.keyCode == nil, flags.intersection(Shortcut.allowedModifiers) == shortcut.flags else {
+            return nil
+        }
+        isHeld = true
+        return pointer
+    }
+
+    /// Returns `true` when this release ends the held shortcut.
+    func keyUp(_ keyCode: UInt16) -> Bool {
+        guard isHeld, keyCode == shortcut.keyCode else { return false }
+        isHeld = false
+        return true
+    }
+
+    /// Returns `true` when `flags` no longer hold every modifier of the
+    /// shortcut.
+    func modifiersChanged(_ flags: CGEventFlags) -> Bool {
+        guard isHeld, !flags.isSuperset(of: shortcut.flags) else { return false }
+        isHeld = false
+        return true
+    }
+
     func reset() {
-        chordHeld = nil
+        isHeld = false
     }
 }
 

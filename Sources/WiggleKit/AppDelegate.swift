@@ -241,15 +241,21 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
         case .keyUp:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if shortcutDetector?.keyUp(UInt16(keyCode)) == true { overlay.hide() }
             return swallowedKeys.remove(keyCode) == nil ? event : nil
 
         case .flagsChanged:
             // A held modifier could switch the input source in the app below.
             // The event carries the absolute modifier state, so the app is in
             // step again with the first one it gets after the overlay closes.
-            guard !overlay.isVisible else { return nil }
-            // The release that completes a chord trigger still reaches the
-            // app below, which saw the modifiers go down.
+            if overlay.isVisible {
+                // The release that closes the overlay reaches the app below,
+                // which saw the modifiers go down.
+                guard shortcutDetector?.modifiersChanged(event.flags) == true else { return nil }
+                overlay.hide()
+                return event
+            }
+            // The press that opens the overlay reaches the app below too.
             let now = CFAbsoluteTimeGetCurrent()
             if let point = firstCompleted({ $0.flagsChanged(event.flags, pointer: event.location, at: now) }),
                 canOpen(at: now)
@@ -321,6 +327,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         detectors = kinds.map { $0.makeDetector(shortcut: store.triggerShortcut) }
         swipeEventFilter = kinds.contains(where: \.isFourFingerVerticalSwipe) ? SwipeEventFilter(fingers: 4) : nil
         needsTouches = kinds.contains(where: \.usesTrackpad)
+    }
+
+    private var shortcutDetector: ShortcutTriggerDetector? {
+        detectors.lazy.compactMap { $0 as? ShortcutTriggerDetector }.first
     }
 
     private func resetDetectors() {
