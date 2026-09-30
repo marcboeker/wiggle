@@ -1,13 +1,13 @@
 cask "wiggle" do
-  version "0.1.0"
+  version "0.2.0"
 
   on_arm do
-    sha256 "816556d888f9bfdd126fc566b9cbd58356ba9aedccae08d3016dfc164570eca6"
+    sha256 "117a5a3ecffb149acd2f423a69559ec503bb818115c3ea1fc9e761ad234ee251"
     url "https://github.com/marcboeker/wiggle/releases/download/v#{version}/Wiggle-macos-arm64.zip"
   end
 
   on_intel do
-    sha256 "1be9c5867e856885d56cc093cc92ad3706c7a88fe5228eef51bff4240166a145"
+    sha256 "fefa0e02ba0a58554b7ad9e93dd127a492d6538ed10f1fc5c84e32395f0c90e0"
     url "https://github.com/marcboeker/wiggle/releases/download/v#{version}/Wiggle-macos-amd64.zip"
   end
 
