@@ -1,5 +1,5 @@
 APP_NAME  := Wiggle
-BUNDLE_ID := net.at6.wiggle
+BUNDLE_ID := one.m8n.wiggle
 CONFIG    := release
 VERSION   ?= main
 

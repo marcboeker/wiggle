@@ -30,10 +30,10 @@ cask "wiggle" do
 
   # Quit the running app before Homebrew replaces the bundle on upgrade/uninstall — otherwise
   # the update clobbers a live process.
-  uninstall quit: "net.at6.wiggle"
+  uninstall quit: "one.m8n.wiggle"
 
   zap trash: [
     "~/.config/wiggle",
-    "~/Library/Preferences/net.at6.wiggle.plist",
+    "~/Library/Preferences/one.m8n.wiggle.plist",
   ]
 end

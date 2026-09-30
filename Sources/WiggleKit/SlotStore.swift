@@ -76,7 +76,7 @@ final class SlotStore {
 
     private let url: URL
     private let iconsURL: URL
-    private let writeQueue = DispatchQueue(label: "net.at6.wiggle.slotstore")
+    private let writeQueue = DispatchQueue(label: "one.m8n.wiggle.slotstore")
 
     init(url: URL = SlotStore.defaultURL) {
         self.url = url
