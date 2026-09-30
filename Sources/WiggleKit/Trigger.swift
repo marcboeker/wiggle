@@ -17,6 +17,9 @@ protocol TriggerDetector: AnyObject {
     /// A key press that completes a gesture is swallowed.
     func keyDown(_ keyCode: UInt16, flags: CGEventFlags, pointer: CGPoint) -> CGPoint?
     func flagsChanged(_ flags: CGEventFlags, pointer: CGPoint, at now: TimeInterval) -> CGPoint?
+    /// A press that completes a gesture is swallowed. `button` counts from 0
+    /// for the left button.
+    func mouseDown(button: Int64, pointer: CGPoint) -> CGPoint?
     /// Forgets a gesture in progress.
     func reset()
 }
@@ -27,6 +30,7 @@ extension TriggerDetector {
     func touchesChanged(_ touches: TouchFrame, pointer: CGPoint, at now: TimeInterval) -> CGPoint? { nil }
     func keyDown(_ keyCode: UInt16, flags: CGEventFlags, pointer: CGPoint) -> CGPoint? { nil }
     func flagsChanged(_ flags: CGEventFlags, pointer: CGPoint, at now: TimeInterval) -> CGPoint? { nil }
+    func mouseDown(button: Int64, pointer: CGPoint) -> CGPoint? { nil }
 }
 
 /// Whether a finger moved farther than a tap allows from where it landed.
@@ -44,6 +48,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
     case fourFingerSwipeUp
     case fourFingerSwipeDown
     case shortcut
+    case middleMouseButton
 
     /// Enabled when the configuration file names no known trigger.
     static let defaults: Set<TriggerKind> = [.wiggle]
@@ -57,6 +62,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerSwipeUp: "Swipe up with four fingers"
         case .fourFingerSwipeDown: "Swipe down with four fingers"
         case .shortcut: "Press a shortcut"
+        case .middleMouseButton: "Press the middle mouse button"
         }
     }
 
@@ -69,6 +75,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerSwipeUp: "Swipe up on the trackpad with four fingers."
         case .fourFingerSwipeDown: "Swipe down on the trackpad with four fingers."
         case .shortcut: "Hold a key combination, or only modifiers such as the Hyper key, to show the wheel. Let go to close it."
+        case .middleMouseButton: "Click the scroll wheel of the mouse."
         }
     }
 
@@ -76,14 +83,14 @@ enum TriggerKind: String, CaseIterable, Sendable {
     /// unless the user switched it off in the Trackpad settings.
     var isFourFingerVerticalSwipe: Bool {
         switch self {
-        case .wiggle, .screenEdge, .threeFingerTap, .fourFingerTap, .shortcut: false
+        case .wiggle, .screenEdge, .threeFingerTap, .fourFingerTap, .shortcut, .middleMouseButton: false
         case .fourFingerSwipeUp, .fourFingerSwipeDown: true
         }
     }
 
     var usesTrackpad: Bool {
         switch self {
-        case .wiggle, .screenEdge, .shortcut: false
+        case .wiggle, .screenEdge, .shortcut, .middleMouseButton: false
         case .threeFingerTap, .fourFingerTap, .fourFingerSwipeUp, .fourFingerSwipeDown: true
         }
     }
@@ -97,6 +104,7 @@ enum TriggerKind: String, CaseIterable, Sendable {
         case .fourFingerSwipeUp: TrackpadSwipeDetector(fingers: 4, direction: .up)
         case .fourFingerSwipeDown: TrackpadSwipeDetector(fingers: 4, direction: .down)
         case .shortcut: ShortcutTriggerDetector(shortcut: shortcut)
+        case .middleMouseButton: MouseButtonDetector(button: 2)
         }
     }
 }

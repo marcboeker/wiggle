@@ -204,6 +204,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             let button = event.getIntegerValueField(.mouseEventButtonNumber)
             // A fresh press: the release of the last one never came.
             swallowedButtons.remove(button)
+            if !overlay.isVisible {
+                let now = CFAbsoluteTimeGetCurrent()
+                if let point = firstCompleted({ $0.mouseDown(button: button, pointer: event.location) }),
+                    canOpen(at: now)
+                {
+                    overlay.show(at: point)
+                    swallowedButtons.insert(button)
+                    return nil
+                }
+            }
             guard overlay.handleMouseDown(at: event.location) else { return event }
             swallowedButtons.insert(button)
             return nil

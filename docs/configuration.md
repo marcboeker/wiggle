@@ -152,6 +152,7 @@ does not know, so a file from a newer version still loads.
 | `fourFingerSwipeUp` | Swipe up with four fingers. |
 | `fourFingerSwipeDown` | Swipe down with four fingers. |
 | `shortcut` | Hold the key combination in `triggerShortcut`. The wheel closes when you let go. |
+| `middleMouseButton` | Press the middle mouse button, the one under the scroll wheel. |
 
 `triggerShortcut` matters only when `triggers` has `shortcut`. A trigger shortcut is one of:
 
