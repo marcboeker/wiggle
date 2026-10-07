@@ -157,6 +157,8 @@ final class OverlayController {
         resize(to: size)
         view.hovered = nil
         panel.alphaValue = store.overlayOpacity
+        view.backgroundOpacity = store.backgroundOpacity
+        backdrop.alphaValue = store.backgroundOpacity
         panel.setFrame(NSRect(origin: origin, size: size), display: false)
         panel.orderFrontRegardless()
         isVisible = true

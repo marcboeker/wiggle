@@ -8,6 +8,7 @@ import SwiftUI
 @Observable
 final class SettingsModel {
     var overlayOpacity = Config.defaultOverlayOpacity
+    var backgroundOpacity = Config.defaultBackgroundOpacity
     var overlayAppearance = Config.defaultOverlayAppearance
     var triggers = TriggerKind.defaults
     var triggerShortcut = TriggerShortcut.hyper
@@ -47,6 +48,8 @@ final class SettingsWindowController: NSWindowController {
         let actions = SettingsActions(
             setOpacity: { [weak self] in self?.setOpacity($0) },
             resetOpacity: { [weak self] in self?.resetOpacity() },
+            setBackgroundOpacity: { [weak self] in self?.setBackgroundOpacity($0) },
+            resetBackgroundOpacity: { [weak self] in self?.setBackgroundOpacity(Config.defaultBackgroundOpacity) },
             setLaunchAtLogin: { [weak self] in self?.setLaunchAtLogin($0) },
             refreshLoginItemStatus: { [weak self] in self?.refreshLoginItemStatus() },
             openLoginItemsSettings: { SMAppService.openSystemSettingsLoginItems() },
@@ -81,6 +84,7 @@ final class SettingsWindowController: NSWindowController {
 
     private func refresh() {
         model.overlayOpacity = store.overlayOpacity
+        model.backgroundOpacity = store.backgroundOpacity
         model.overlayAppearance = store.overlayAppearance
         model.triggers = store.triggers
         model.triggerShortcut = store.triggerShortcut
@@ -102,6 +106,11 @@ final class SettingsWindowController: NSWindowController {
     private func setOpacity(_ opacity: CGFloat) {
         store.setOverlayOpacity(opacity)
         model.overlayOpacity = store.overlayOpacity
+    }
+
+    private func setBackgroundOpacity(_ opacity: CGFloat) {
+        store.setBackgroundOpacity(opacity)
+        model.backgroundOpacity = store.backgroundOpacity
     }
 
     private func resetOpacity() { setOpacity(Config.defaultOverlayOpacity) }

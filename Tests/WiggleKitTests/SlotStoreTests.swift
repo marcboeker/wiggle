@@ -562,3 +562,7 @@ import Testing
 @Test func everySlotColorNameIsStable() {
     #expect(SlotColor.allCases.map(\.rawValue) == ["red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"])
 }
+
+@Test func aFreshStoreUsesTheDefaultBackgroundOpacity() {
+    #expect(SlotStore(url: temporaryConfigURL()).backgroundOpacity == 0.9)
+}

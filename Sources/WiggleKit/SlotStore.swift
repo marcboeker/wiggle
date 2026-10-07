@@ -15,6 +15,7 @@ final class SlotStore {
         var triggers: [String]?
         var triggerShortcut: String?
         var overlayOpacity: CGFloat?
+        var backgroundOpacity: CGFloat?
         var showMenuBarItem: Bool?
         var overlayAppearance: String?
     }
@@ -69,6 +70,7 @@ final class SlotStore {
     private(set) var triggerShortcut = TriggerShortcut.hyper
 
     private(set) var overlayOpacity = Config.defaultOverlayOpacity
+    private(set) var backgroundOpacity = Config.defaultBackgroundOpacity
 
     private(set) var showsMenuBarItem = true
 
@@ -119,6 +121,11 @@ final class SlotStore {
         save()
     }
 
+    func setBackgroundOpacity(_ opacity: CGFloat) {
+        backgroundOpacity = min(max(opacity, Config.backgroundOpacityRange.lowerBound), Config.backgroundOpacityRange.upperBound)
+        save()
+    }
+
     func setShowsMenuBarItem(_ show: Bool) {
         showsMenuBarItem = show
         save()
@@ -150,6 +157,8 @@ final class SlotStore {
             triggers = SlotStore.knownTriggers(file.triggers)
             triggerShortcut = file.triggerShortcut.flatMap(TriggerShortcut.init(shortcutString:)) ?? .hyper
             overlayOpacity = file.overlayOpacity.map(SlotStore.clampedOpacity) ?? Config.defaultOverlayOpacity
+            backgroundOpacity = file.backgroundOpacity.map { min(max($0, Config.backgroundOpacityRange.lowerBound), Config.backgroundOpacityRange.upperBound) }
+                ?? Config.defaultBackgroundOpacity
             showsMenuBarItem = file.showMenuBarItem ?? true
             overlayAppearance = file.overlayAppearance.flatMap(OverlayAppearance.init(rawValue:))
                 ?? Config.defaultOverlayAppearance
@@ -261,7 +270,7 @@ final class SlotStore {
             version: 4, rings: rings,
             triggers: TriggerKind.allCases.filter { triggers.contains($0) }.map(\.rawValue),
             triggerShortcut: triggerShortcut.shortcutString,
-            overlayOpacity: overlayOpacity, showMenuBarItem: showsMenuBarItem,
+            overlayOpacity: overlayOpacity, backgroundOpacity: backgroundOpacity, showMenuBarItem: showsMenuBarItem,
             overlayAppearance: overlayAppearance.rawValue)
         guard let data = try? encoder.encode(file) else { return }
         let iconsURL = self.iconsURL

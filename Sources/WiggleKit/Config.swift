@@ -48,8 +48,9 @@ enum Config {
     /// horizontally, which allows a slant of about 27 degrees off vertical.
     static let swipeVerticalRatio: CGFloat = 2
 
-    /// Gap between the wheel's outer edge and the panel border.
-    static let wheelPadding: CGFloat = 12
+    /// Gap between the wheel's outer edge and the panel border. Room for a
+    /// lifted outer tile and its shadow.
+    static let wheelPadding: CGFloat = 24
     /// Smallest gap between the overlay and the edge of the screen.
     static let screenMargin: CGFloat = 12
 
@@ -69,12 +70,32 @@ enum Config {
     static let circleOuterSliceIconBoxSize: CGFloat = 30
     /// How far in from a ring's outer edge its key hint sits.
     static let circleHintInset: CGFloat = 12
+    /// The icon a tile draws is 60 % of this square. Larger than the icon box,
+    /// which also sizes the Settings hit targets and must not overlap.
+    static let circleInnerSliceTileIconSize: CGFloat = 66
+    static let circleOuterSliceTileIconSize: CGFloat = 46
+
+    /// The even gap between neighbouring tiles.
+    static let wheelTileGap: CGFloat = 6
+    /// The band along a tile's outer edge that shows the slot's colour.
+    static let wheelRimWidth: CGFloat = 4
+    /// A ring 1 tile's band, on its short hub side, needs more depth to show.
+    static let wheelHubSideRimDepth: CGFloat = 9
+    /// How far the disc under the tiles reaches past the outer ring.
+    static let wheelDiscMargin: CGFloat = 5
+    /// How far the hovered tile lifts outward.
+    static let wheelLiftDistance: CGFloat = 7
+    /// The ease-out of the lift: about 95 % of the way after 3 of these.
+    static let wheelLiftTimeConstant: TimeInterval = 0.035
 
     static let defaultOverlayOpacity: CGFloat = 0.92
-    /// The slider's range. Below 0.5 the white key hints and the slices'
-    /// 8 % fill fade into a light or busy background, and the overlay is
-    /// something to read at a glance.
+    /// The slider's range. Below 0.5 the key hints and the tiles fade into a
+    /// light or busy background, and the overlay is something to read at a
+    /// glance.
     static let overlayOpacityRange: ClosedRange<CGFloat> = 0.5...1
+    /// The blur and the disc behind the tiles, apart from the whole wheel.
+    static let defaultBackgroundOpacity: CGFloat = 0.9
+    static let backgroundOpacityRange: ClosedRange<CGFloat> = 0...1
     static let defaultOverlayAppearance: OverlayAppearance = .auto
 
     static let permissionCheckInterval: TimeInterval = 2.0

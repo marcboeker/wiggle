@@ -5,6 +5,8 @@ import SwiftUI
 struct SettingsActions {
     var setOpacity: (CGFloat) -> Void
     var resetOpacity: () -> Void
+    var setBackgroundOpacity: (CGFloat) -> Void
+    var resetBackgroundOpacity: () -> Void
     var setLaunchAtLogin: (Bool) -> Void
     var refreshLoginItemStatus: () -> Void
     var openLoginItemsSettings: () -> Void
@@ -95,8 +97,14 @@ struct GeneralPage: View {
     var body: some View {
         Form {
             Section {
-                SettingsRow(title: "Overlay opacity", description: "How see-through the wheel is when it opens.") {
+                SettingsRow(title: "Overlay opacity", description: "How see-through the whole wheel is when it opens.") {
                     opacityControl
+                }
+                SettingsRow(
+                    title: "Background opacity",
+                    description: "How see-through the blurred disc behind the tiles is."
+                ) {
+                    backgroundOpacityControl
                 }
                 SettingsRow(
                     title: "Overlay appearance",
@@ -139,6 +147,23 @@ struct GeneralPage: View {
                 .monospacedDigit()
                 .frame(width: 48, alignment: .trailing)
             Button("Reset") { actions.resetOpacity() }
+        }
+    }
+
+    private var backgroundOpacityControl: some View {
+        HStack(spacing: 12) {
+            Slider(
+                value: $model.backgroundOpacity, in: Config.backgroundOpacityRange,
+                onEditingChanged: { editing in
+                    if !editing { actions.setBackgroundOpacity(model.backgroundOpacity) }
+                }
+            )
+            .frame(width: 160)
+            .accessibilityLabel("Background Opacity")
+            Text("\(Int((model.backgroundOpacity * 100).rounded())) %")
+                .monospacedDigit()
+                .frame(width: 48, alignment: .trailing)
+            Button("Reset") { actions.resetBackgroundOpacity() }
         }
     }
 

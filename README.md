@@ -1,7 +1,7 @@
 # Wiggle
 
 <p align="center">
-  <img src="docs/app-icon.png" alt="Wiggle app icon" width="128">
+  <img src="assets/app-icon.png" alt="Wiggle app icon" width="128">
 </p>
 
 Switch apps and run shortcuts without the keyboard. Shake the mouse pointer, a wheel of actions
@@ -9,7 +9,7 @@ opens where the pointer is, and you click one. Wiggle is a free macOS app, named
 trigger: a wiggle of the pointer.
 
 <p align="center">
-  <img src="docs/wiggle-demo.gif" alt="The pointer shakes, the Wiggle wheel opens around it, and a click on the cheese slot runs an AppleScript that shows the alert “Cheese, please!”" width="480">
+  <img src="assets/demo.gif" alt="The pointer shakes, the Wiggle wheel opens around it, and a click on the center slot brings the terminal to the front. In Settings, a click on an empty slot assigns Music to it, and a drag moves Music to another slot." width="480">
 </p>
 
 ## The problem
@@ -97,7 +97,7 @@ App Exposé. To use them for Wiggle, switch them off in **System Settings → Tr
 Gestures**.
 
 <p align="center">
-  <img src="docs/settings_triggers.png" alt="The Triggers page in Settings" width="600">
+  <img src="assets/settings_triggers.png" alt="The Triggers page in Settings" width="600">
 </p>
 
 ## Actions
@@ -121,7 +121,7 @@ also give each slot a color.
 | Outer ring | `a` to `p` |
 
 <p align="center">
-  <img src="docs/settings_actions.png" alt="The Actions page in Settings, with the wheel editor" width="600">
+  <img src="assets/settings_actions.png" alt="The Actions page in Settings, with the wheel editor" width="600">
 </p>
 
 ## Settings and configuration

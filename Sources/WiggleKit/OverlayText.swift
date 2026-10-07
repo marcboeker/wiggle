@@ -62,7 +62,12 @@ enum OverlayText {
         return symbol
     }
 
-    static func drawHint(_ text: String, at point: NSPoint, color: NSColor) {
-        draw(text, in: NSRect(origin: point, size: .zero), size: 9, alpha: 0.3, weight: .medium, color: color)
+    /// In the rounded design, which matches the tiles' soft corners.
+    static func drawHint(_ text: String, at point: NSPoint, size: CGFloat, color: NSColor) {
+        let base = NSFont.systemFont(ofSize: size, weight: .bold)
+        let font = base.fontDescriptor.withDesign(.rounded).flatMap { NSFont(descriptor: $0, size: size) } ?? base
+        let string = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color])
+        let textSize = string.size()
+        string.draw(at: NSPoint(x: point.x - textSize.width / 2, y: point.y - textSize.height / 2))
     }
 }

@@ -134,7 +134,7 @@ final class WheelPaneViewController: NSViewController {
         pane.wantsLayer = true
         // The wheel draws for a dark backdrop in either system appearance.
         pane.appearance = NSAppearance(named: .darkAqua)
-        pane.layer?.backgroundColor = NSColor(white: 0.13, alpha: 1).cgColor
+        pane.layer?.backgroundColor = NSColor(srgbHex: 0x0E0D10).cgColor
         pane.layer?.cornerRadius = 18
         pane.slotAt = { [weak self] point in
             guard let wheel = self?.wheel else { return nil }

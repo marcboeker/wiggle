@@ -11,7 +11,7 @@ Usage:
     python3 Resources/generate_icon.py
 
 Produces:
-    docs/app-icon.png        (1024x1024, for the README)
+    assets/app-icon.png        (1024x1024, for the README)
     Resources/AppIcon.iconset/icon_*.png
     Resources/AppIcon.icns   (via iconutil)
 """
@@ -22,7 +22,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 HERE = Path(__file__).resolve().parent
-DOCS = HERE.parent / "docs"
+DOCS = HERE.parent / "assets"
 
 # Supersample factor for smooth anti-aliased edges when downscaling.
 SUPERSAMPLE = 4
