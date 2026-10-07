@@ -9,6 +9,10 @@ opens where the pointer is, and you click one. Wiggle is a free macOS app, named
 trigger: a wiggle of the pointer.
 
 <p align="center">
+  <img src="assets/cover.png" alt="The Wiggle wheel open over a browser window, the pointer on the highlighted Safari slot. Claim: Your actions, right at the pointer." width="100%">
+</p>
+
+<p align="center">
   <img src="assets/demo.gif" alt="The pointer shakes, the Wiggle wheel opens around it, and a click on the center slot brings the terminal to the front. In Settings, a click on an empty slot assigns Music to it, and a drag moves Music to another slot." width="480">
 </p>
 
