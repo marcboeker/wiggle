@@ -19,7 +19,8 @@ open -a Wiggle --args --config ~/dotfiles/wiggle.json
 ```
 
 The `icons` folder is always next to the config file. If the config file is a symlink, as a
-dotfile manager makes it, Wiggle writes through the link and keeps it.
+dotfile manager makes it, Wiggle writes through the link and keeps it. The `icons` folder stays
+next to the link, so link the `icons` folder too if you want your image faces on another Mac.
 
 ## Edit the file by hand
 
@@ -198,6 +199,7 @@ Wiggle does not stop on a bad file. It has these rules:
 | A value has an unknown name (trigger, color, appearance) | Skips it and uses the default. |
 | A key is missing | Uses the default. |
 | The whole file is not valid JSON or does not match the format | Moves the file to `config.json.broken` and starts with an empty configuration. |
+| The file exists but cannot be read, for example a symlink into a volume that is not mounted | Starts with an empty configuration and saves no change, so the file stays as it is. Quit and open Wiggle again when the file is available. |
 
 `config.json.broken` holds your previous content, so you can fix it and copy your slots back.
 Wiggle writes the message that names the problem to the system log. Stream it with:

@@ -36,28 +36,6 @@ final class SlotStore {
         }
     }
 
-    /// Version 3: nine slots, 1...8 around and 9 the centre. The older
-    /// formats below are read once and upgraded on the next save.
-    private struct V3File: Codable {
-        var version: Int
-        var slots: [Int: SlotAssignment]
-        var triggers: [String]?
-    }
-
-    private struct LegacyArrayFile: Codable {
-        var version: Int
-        var slots: [SlotAssignment?]
-    }
-
-    private struct LegacyBareShortcutFile: Codable {
-        var version: Int
-        var slots: [Shortcut?]
-    }
-
-    /// The v3 slot number of each array position in a legacy file, so an
-    /// assignment keeps its physical position.
-    private static let legacySlotNumberByOldIndex = [8, 1, 2, 7, 9, 3, 6, 5, 4]
-
     static let defaultURL: URL = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent(".config/wiggle/config.json")
 
@@ -79,6 +57,10 @@ final class SlotStore {
     private let url: URL
     private let iconsURL: URL
     private let writeQueue = DispatchQueue(label: "one.m8n.wiggle.slotstore")
+    /// `false` when the file exists but could not be read, such as a
+    /// symlink into a volume that is not mounted yet. A save would replace
+    /// it with the defaults.
+    private var canSave = true
 
     init(url: URL = SlotStore.defaultURL) {
         self.url = url
@@ -117,12 +99,12 @@ final class SlotStore {
     }
 
     func setOverlayOpacity(_ opacity: CGFloat) {
-        overlayOpacity = SlotStore.clampedOpacity(opacity)
+        overlayOpacity = SlotStore.clamped(opacity, to: Config.overlayOpacityRange)
         save()
     }
 
     func setBackgroundOpacity(_ opacity: CGFloat) {
-        backgroundOpacity = min(max(opacity, Config.backgroundOpacityRange.lowerBound), Config.backgroundOpacityRange.upperBound)
+        backgroundOpacity = SlotStore.clamped(opacity, to: Config.backgroundOpacityRange)
         save()
     }
 
@@ -146,7 +128,19 @@ final class SlotStore {
     }
 
     private func load() {
-        guard let data = try? Data(contentsOf: url) else { return }
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            let files = FileManager.default
+            // A missing file is a fresh start. A link to a missing file is not.
+            guard files.fileExists(atPath: url.path)
+                || (try? files.destinationOfSymbolicLink(atPath: url.path)) != nil
+            else { return }
+            canSave = false
+            NSLog("wiggle: cannot read \(url.path), changes are not saved: \(error.localizedDescription)")
+            return
+        }
         if let file = try? JSONDecoder().decode(File.self, from: data) {
             let rings = file.rings.map { $0.compactMapValues(\.value) }
             if rings.map(\.count) != file.rings.map(\.count) {
@@ -156,26 +150,13 @@ final class SlotStore {
             slots = SlotStore.clampedRings(rings)
             triggers = SlotStore.knownTriggers(file.triggers)
             triggerShortcut = file.triggerShortcut.flatMap(TriggerShortcut.init(shortcutString:)) ?? .hyper
-            overlayOpacity = file.overlayOpacity.map(SlotStore.clampedOpacity) ?? Config.defaultOverlayOpacity
-            backgroundOpacity = file.backgroundOpacity.map { min(max($0, Config.backgroundOpacityRange.lowerBound), Config.backgroundOpacityRange.upperBound) }
+            overlayOpacity = file.overlayOpacity.map { SlotStore.clamped($0, to: Config.overlayOpacityRange) }
+                ?? Config.defaultOverlayOpacity
+            backgroundOpacity = file.backgroundOpacity.map { SlotStore.clamped($0, to: Config.backgroundOpacityRange) }
                 ?? Config.defaultBackgroundOpacity
             showsMenuBarItem = file.showMenuBarItem ?? true
             overlayAppearance = file.overlayAppearance.flatMap(OverlayAppearance.init(rawValue:))
                 ?? Config.defaultOverlayAppearance
-            return
-        }
-        if let file = try? JSONDecoder().decode(V3File.self, from: data) {
-            slots = SlotStore.migrateV3(file.slots)
-            triggers = SlotStore.knownTriggers(file.triggers)
-            return
-        }
-        if let legacy = try? JSONDecoder().decode(LegacyArrayFile.self, from: data) {
-            slots = SlotStore.migrateV3(SlotStore.migrateLegacyArray(legacy.slots))
-            return
-        }
-        if let legacy = try? JSONDecoder().decode(LegacyBareShortcutFile.self, from: data) {
-            slots = SlotStore.migrateV3(
-                SlotStore.migrateLegacyArray(legacy.slots.map { $0.map { .action(.shortcut($0), face: nil) } }))
             return
         }
         // Overwriting an unreadable file would throw away assignments the
@@ -227,34 +208,18 @@ final class SlotStore {
         return kinds.isEmpty ? TriggerKind.defaults : kinds
     }
 
-    private static func clampedOpacity(_ opacity: CGFloat) -> CGFloat {
-        min(max(opacity, Config.overlayOpacityRange.lowerBound), Config.overlayOpacityRange.upperBound)
+    private static func clamped(_ value: CGFloat, to range: ClosedRange<CGFloat>) -> CGFloat {
+        min(max(value, range.lowerBound), range.upperBound)
     }
 
-    private static func migrateV3(_ slots: [Int: SlotAssignment]) -> [SlotID: Slot] {
-        var result: [SlotID: Slot] = [:]
-        for (number, assignment) in slots {
-            if number == 9 {
-                result[.center] = Slot(assignment)
-            } else if SlotID.innerNumbers.contains(number) {
-                result[.inner(number)] = Slot(assignment)
-            }
-        }
-        return result
-    }
-
-    private static func migrateLegacyArray(_ loaded: [SlotAssignment?]) -> [Int: SlotAssignment] {
-        var assignments: [Int: SlotAssignment] = [:]
-        for (index, assignment) in loaded.enumerated() {
-            guard let assignment, legacySlotNumberByOldIndex.indices.contains(index) else { continue }
-            assignments[legacySlotNumberByOldIndex[index]] = assignment
-        }
-        return assignments
-    }
+    /// Only these names are deleted from the icons folder, which may be
+    /// shared, as `--config ~/dotfiles/wiggle.json` makes `~/dotfiles/icons`.
+    private static let iconFileNames = Set(SlotID.all.map { "\($0.fileName).png" })
 
     /// PNGs go first and stale files last, so a crash in between never
     /// leaves the config pointing at an image that is gone.
     private func save() {
+        guard canSave else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         var rings: [[Int: LenientSlot]] = [[:], [:], [:]]
@@ -293,7 +258,8 @@ final class SlotStore {
                 return
             }
             let present = (try? files.contentsOfDirectory(at: iconsURL, includingPropertiesForKeys: nil)) ?? []
-            for icon in present where icon.pathExtension == "png" && images[icon.lastPathComponent] == nil {
+            for icon in present
+            where SlotStore.iconFileNames.contains(icon.lastPathComponent) && images[icon.lastPathComponent] == nil {
                 try? files.removeItem(at: icon)
             }
         }

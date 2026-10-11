@@ -137,9 +137,9 @@ import Testing
     try Data(
         #"""
         {"version":4,"rings":[
-            {"0":{"kind":"shortcut","shortcut":{"keyCode":1,"modifiers":0}},"1":{"kind":"shortcut","shortcut":{"keyCode":2,"modifiers":0}}},
-            {"1":{"kind":"shortcut","shortcut":{"keyCode":3,"modifiers":0}},"9":{"kind":"shortcut","shortcut":{"keyCode":4,"modifiers":0}}},
-            {"16":{"kind":"shortcut","shortcut":{"keyCode":5,"modifiers":0}},"17":{"kind":"shortcut","shortcut":{"keyCode":6,"modifiers":0}},"0":{"kind":"shortcut","shortcut":{"keyCode":7,"modifiers":0}}}
+            {"0":{"kind":"shortcut","shortcut":"s"},"1":{"kind":"shortcut","shortcut":"d"}},
+            {"1":{"kind":"shortcut","shortcut":"f"},"9":{"kind":"shortcut","shortcut":"h"}},
+            {"16":{"kind":"shortcut","shortcut":"g"},"17":{"kind":"shortcut","shortcut":"z"},"0":{"kind":"shortcut","shortcut":"x"}}
         ]}
         """#.utf8
     ).write(to: url)
@@ -162,83 +162,14 @@ import Testing
     try Data(
         #"""
         {"version":4,"rings":[
-            {"0":{"kind":"shortcut","shortcut":{"keyCode":1,"modifiers":0}}},
-            {"9":{"kind":"shortcut","shortcut":{"keyCode":2,"modifiers":0}}}
+            {"0":{"kind":"shortcut","shortcut":"s"}},
+            {"9":{"kind":"shortcut","shortcut":"d"}}
         ]}
         """#.utf8
     ).write(to: url)
     let store = SlotStore(url: url)
     #expect(store[.center] == .action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: nil))
     #expect(store.slots.count == 1)
-    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
-}
-
-@Test func aV3CentreSlotMigratesToRingZero() throws {
-    let url = temporaryConfigURL()
-    try FileManager.default.createDirectory(
-        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    try Data(
-        #"{"version":3,"slots":{"9":{"kind":"shortcut","shortcut":{"keyCode":1,"modifiers":0}}}}"#.utf8
-    ).write(to: url)
-
-    let store = SlotStore(url: url)
-    #expect(store[.center] == .action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: nil))
-    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
-}
-
-@Test func aV3RingSlotMigratesToRingOne() throws {
-    let url = temporaryConfigURL()
-    try FileManager.default.createDirectory(
-        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    try Data(
-        #"{"version":3,"slots":{"1":{"kind":"shortcut","shortcut":{"keyCode":1,"modifiers":0}}},"triggers":["screenEdge"]}"#
-            .utf8
-    ).write(to: url)
-
-    let store = SlotStore(url: url)
-    #expect(store[.inner(1)] == .action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: nil))
-    #expect(store.triggers == [.screenEdge])
-    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
-}
-
-@Test func aLegacyBareShortcutFileIsMigratedToRingOne() throws {
-    let url = temporaryConfigURL()
-    try FileManager.default.createDirectory(
-        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    // Under the pre-reorder layout, array index 1 sat at the top of the wheel.
-    try Data(
-        #"{"version":1,"slots":[null,{"keyCode":46,"modifiers":1966080},null]}"#.utf8
-    ).write(to: url)
-
-    let store = SlotStore(url: url)
-    // Slot 1 (the top of the wheel) is still where the assignment lands.
-    #expect(
-        store[.inner(1)]
-            == .action(.shortcut(Shortcut(keyCode: 46, flags: CGEventFlags(rawValue: 1_966_080))), face: nil))
-    #expect(store[.inner(2)] == nil)
-    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
-}
-
-@Test func aLegacyArrayFileMigratesTheHubToTheCentre() throws {
-    let url = temporaryConfigURL()
-    try FileManager.default.createDirectory(
-        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    // Old array index 4 was the hub (now the centre); old index 0 was the
-    // upper-left slice (now ring 1 slot 8).
-    try Data(
-        #"""
-        {"version":2,"slots":[
-            {"kind":"shortcut","shortcut":{"keyCode":1,"modifiers":0}},
-            null, null, null,
-            {"kind":"shortcut","shortcut":{"keyCode":2,"modifiers":0}},
-            null, null, null, null
-        ]}
-        """#.utf8
-    ).write(to: url)
-
-    let store = SlotStore(url: url)
-    #expect(store[.inner(8)] == .action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: nil))
-    #expect(store[.center] == .action(.shortcut(Shortcut(keyCode: 2, flags: [])), face: nil))
     try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
 }
 
@@ -302,7 +233,7 @@ import Testing
     try FileManager.default.createDirectory(
         at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try Data(
-        #"{"version":4,"rings":[{},{"2":{"kind":"shortcut","shortcut":{"keyCode":1,"modifiers":0}}},{}],"triggers":["hotCorner"]}"#
+        #"{"version":4,"rings":[{},{"2":{"kind":"shortcut","shortcut":"s"}},{}],"triggers":["hotCorner"]}"#
             .utf8
     ).write(to: url)
 
@@ -565,4 +496,39 @@ import Testing
 
 @Test func aFreshStoreUsesTheDefaultBackgroundOpacity() {
     #expect(SlotStore(url: temporaryConfigURL()).backgroundOpacity == 0.9)
+}
+
+@Test func aSaveDeletesOnlyStaleSlotIconsFromASharedIconsFolder() throws {
+    let url = temporaryConfigURL()
+    let icons = url.deletingLastPathComponent().appendingPathComponent("icons")
+    try FileManager.default.createDirectory(at: icons, withIntermediateDirectories: true)
+    let foreign = icons.appendingPathComponent("photo.png")
+    let stale = icons.appendingPathComponent("slot-3.png")
+    try Data("not wiggle's".utf8).write(to: foreign)
+    try Data("left over".utf8).write(to: stale)
+
+    let store = SlotStore(url: url)
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: .emoji("🙂"))), to: .center)
+    store.waitForWrites()
+
+    #expect(FileManager.default.fileExists(atPath: foreign.path))
+    #expect(!FileManager.default.fileExists(atPath: stale.path))
+    try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+}
+
+@Test func aLinkToAMissingConfigIsNeverReplaced() throws {
+    let directory = temporaryConfigURL().deletingLastPathComponent()
+    let target = directory.appendingPathComponent("unmounted/config.json")
+    let link = directory.appendingPathComponent("config.json")
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+
+    let store = SlotStore(url: link)
+    store.assign(Slot(.action(.shortcut(Shortcut(keyCode: 1, flags: [])), face: .emoji("🙂"))), to: .center)
+    store.waitForWrites()
+
+    let attributes = try FileManager.default.attributesOfItem(atPath: link.path)
+    #expect(attributes[.type] as? FileAttributeType == .typeSymbolicLink)
+    #expect(!FileManager.default.fileExists(atPath: target.path))
+    try? FileManager.default.removeItem(at: directory)
 }

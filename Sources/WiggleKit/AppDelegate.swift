@@ -5,7 +5,7 @@ import ApplicationServices
 @MainActor
 public final class AppDelegate: NSObject, NSApplicationDelegate {
 
-    private lazy var store = SlotStore(url: AppDelegate.configURL(from: CommandLine.arguments))
+    private let store: SlotStore
     private lazy var overlay = OverlayController(store: store)
     private lazy var settings = SettingsWindowController(store: store)
     private var detectors: [any TriggerDetector] = []
@@ -26,7 +26,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var swallowedKeys: Set<Int64> = []
     private var swallowedButtons: Set<Int64> = []
 
-    public override init() { super.init() }
+    public override convenience init() {
+        self.init(store: SlotStore(url: AppDelegate.configURL(from: CommandLine.arguments)))
+    }
+
+    init(store: SlotStore) {
+        self.store = store
+        super.init()
+    }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
@@ -175,7 +182,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         NSLog("wiggle: event tap active")
     }
 
-    private func handle(type: CGEventType, event: CGEvent) -> CGEvent? {
+    /// Returns `nil` to swallow the event.
+    func handle(type: CGEventType, event: CGEvent) -> CGEvent? {
         switch type {
         case .mouseMoved:
             var location = pointerWarpGuard.correct(event.location)
@@ -332,7 +340,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Drops every gesture in progress.
-    private func rebuildDetectors() {
+    func rebuildDetectors() {
         let kinds = TriggerKind.allCases.filter { store.triggers.contains($0) }
         detectors = kinds.map { $0.makeDetector(shortcut: store.triggerShortcut) }
         swipeEventFilter = kinds.contains(where: \.isFourFingerVerticalSwipe) ? SwipeEventFilter(fingers: 4) : nil

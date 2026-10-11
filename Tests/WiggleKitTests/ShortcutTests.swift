@@ -64,16 +64,3 @@ import Testing
     let data = try JSONEncoder().encode(shortcut)
     #expect(String(data: data, encoding: .utf8) == "\"cmd+shift+4\"")
 }
-
-@Test func theOldObjectFormatStillDecodes() throws {
-    let json = Data(#"{"keyCode":8,"modifiers":1048576}"#.utf8)
-    let shortcut = try JSONDecoder().decode(Shortcut.self, from: json)
-    #expect(shortcut == Shortcut(keyCode: 8, flags: .maskCommand))
-}
-
-@Test func theOldObjectFormatDropsModifiersThatCannotBePosted() throws {
-    // Command plus the non-coalesced and numeric pad bits.
-    let json = Data(#"{"keyCode":8,"modifiers":3145984}"#.utf8)
-    let shortcut = try JSONDecoder().decode(Shortcut.self, from: json)
-    #expect(shortcut.flags == .maskCommand)
-}

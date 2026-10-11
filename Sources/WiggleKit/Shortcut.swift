@@ -66,24 +66,15 @@ extension Shortcut {
     }
 }
 
-/// Also reads the `keyCode`/`modifiers` object written before shortcuts
-/// were spelled out as strings.
 extension Shortcut: Codable {
-    private enum LegacyCodingKeys: String, CodingKey { case keyCode, modifiers }
-
     init(from decoder: Decoder) throws {
-        if let container = try? decoder.singleValueContainer(), let raw = try? container.decode(String.self) {
-            guard let parsed = Shortcut(shortcutString: raw) else {
-                throw DecodingError.dataCorruptedError(
-                    in: container, debugDescription: "Unrecognized shortcut \"\(raw)\"")
-            }
-            self = parsed
-            return
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        guard let parsed = Shortcut(shortcutString: raw) else {
+            throw DecodingError.dataCorruptedError(
+                in: container, debugDescription: "Unrecognized shortcut \"\(raw)\"")
         }
-        let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
-        self.init(
-            keyCode: try legacy.decode(UInt16.self, forKey: .keyCode),
-            flags: CGEventFlags(rawValue: try legacy.decode(UInt64.self, forKey: .modifiers)))
+        self = parsed
     }
 
     func encode(to encoder: Encoder) throws {
