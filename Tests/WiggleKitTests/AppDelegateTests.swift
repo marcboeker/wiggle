@@ -39,3 +39,25 @@ private func middleButton(_ type: CGEventType, at point: CGPoint) throws -> CGEv
     #expect(app.handle(type: .keyDown, event: try key(kVK_ANSI_1, down: true)) != nil)
     #expect(app.handle(type: .keyUp, event: try key(kVK_ANSI_1, down: false)) != nil)
 }
+
+/// The trigger shortcut opens the wheel, and the same press closes it. Its
+/// release changes nothing, and the app below sees neither press nor release.
+@Test @MainActor func theTriggerShortcutTogglesTheWheel() throws {
+    let store = SlotStore(url: temporaryConfigURL())
+    store.setTriggers([.shortcut])
+    store.setTriggerShortcut(try #require(TriggerShortcut(keyCode: UInt16(kVK_F13), flags: [])))
+    let app = AppDelegate(store: store)
+    app.rebuildDetectors()
+
+    #expect(app.handle(type: .keyDown, event: try key(kVK_F13, down: true)) == nil)
+    #expect(app.handle(type: .keyUp, event: try key(kVK_F13, down: false)) == nil)
+    // Still open: the key after the release is taken by the wheel.
+    #expect(app.handle(type: .keyDown, event: try key(kVK_ANSI_1, down: true)) == nil)
+    #expect(app.handle(type: .keyUp, event: try key(kVK_ANSI_1, down: false)) == nil)
+
+    #expect(app.handle(type: .keyDown, event: try key(kVK_F13, down: true)) == nil)
+    #expect(app.handle(type: .keyUp, event: try key(kVK_F13, down: false)) == nil)
+    // Closed: keys reach the app below again.
+    #expect(app.handle(type: .keyDown, event: try key(kVK_ANSI_1, down: true)) != nil)
+    #expect(app.handle(type: .keyUp, event: try key(kVK_ANSI_1, down: false)) != nil)
+}

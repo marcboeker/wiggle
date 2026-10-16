@@ -251,6 +251,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 guard let point, canOpen(at: now) else { return event }
                 overlay.show(at: point)
+            } else if shortcutDetector?.keyDown(UInt16(keyCode), flags: event.flags, pointer: event.location) != nil {
+                // The trigger shortcut again closes the overlay.
+                overlay.hide()
             } else if !overlay.handleKeyDown(event) {
                 return event
             }
@@ -259,7 +262,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
         case .keyUp:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-            if shortcutDetector?.keyUp(UInt16(keyCode)) == true { overlay.hide() }
             return swallowedKeys.remove(keyCode) == nil ? event : nil
 
         case .flagsChanged:
@@ -267,9 +269,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // The event carries the absolute modifier state, so the app is in
             // step again with the first one it gets after the overlay closes.
             if overlay.isVisible {
-                // The release that closes the overlay reaches the app below,
+                // The press that closes the overlay reaches the app below,
                 // which saw the modifiers go down.
-                guard shortcutDetector?.modifiersChanged(event.flags) == true else { return nil }
+                let now = CFAbsoluteTimeGetCurrent()
+                guard shortcutDetector?.flagsChanged(event.flags, pointer: event.location, at: now) != nil else { return nil }
                 overlay.hide()
                 return event
             }

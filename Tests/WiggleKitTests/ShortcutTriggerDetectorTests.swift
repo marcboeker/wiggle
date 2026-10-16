@@ -18,7 +18,6 @@ private func hyperDetector() -> ShortcutTriggerDetector { ShortcutTriggerDetecto
         #expect(detector.flagsChanged(held, pointer: pointer, at: 1000) == nil)
     }
     #expect(detector.flagsChanged(hyper, pointer: pointer, at: 1000) == pointer)
-    #expect(detector.isHeld)
 }
 
 @Test func aHyperChordIgnoresFlagsOutsideTheModifiers() {
@@ -29,23 +28,16 @@ private func hyperDetector() -> ShortcutTriggerDetector { ShortcutTriggerDetecto
 @Test func anExtraModifierDoesNotShowTheWheel() {
     let detector = ShortcutTriggerDetector(shortcut: TriggerShortcut(keyCode: nil, flags: [.maskCommand, .maskShift])!)
     #expect(detector.flagsChanged([.maskCommand, .maskShift, .maskControl], pointer: pointer, at: 1000) == nil)
-    #expect(!detector.isHeld)
 }
 
-@Test func releasingAModifierOfTheChordEndsTheHold() {
-    let detector = hyperDetector()
-    #expect(detector.flagsChanged(hyper, pointer: pointer, at: 1000) == pointer)
-    #expect(!detector.modifiersChanged(hyper))
-    #expect(detector.modifiersChanged([.maskCommand, .maskControl, .maskAlternate]))
-    #expect(!detector.isHeld)
-    #expect(!detector.modifiersChanged([]))
-}
-
-@Test func aResetEndsTheHold() {
-    let detector = hyperDetector()
-    #expect(detector.flagsChanged(hyper, pointer: pointer, at: 1000) == pointer)
-    detector.reset()
-    #expect(!detector.modifiersChanged([]))
+@Test func theSamePressMatchesAgainToCloseTheWheel() {
+    let detector = ShortcutTriggerDetector(shortcut: TriggerShortcut(keyCode: k, flags: hyper)!)
+    #expect(detector.keyDown(k, flags: hyper, pointer: pointer) == pointer)
+    #expect(detector.keyDown(k, flags: hyper, pointer: pointer) == pointer)
+    let chord = hyperDetector()
+    #expect(chord.flagsChanged(hyper, pointer: pointer, at: 1000) == pointer)
+    #expect(chord.flagsChanged([.maskCommand], pointer: pointer, at: 1001) == nil)
+    #expect(chord.flagsChanged(hyper, pointer: pointer, at: 1002) == pointer)
 }
 
 @Test func aKeyCombinationTriggersOnItsKey() {
@@ -63,22 +55,6 @@ private func hyperDetector() -> ShortcutTriggerDetector { ShortcutTriggerDetecto
 @Test func aKeyCombinationIgnoresItsModifiersAlone() {
     let detector = ShortcutTriggerDetector(shortcut: TriggerShortcut(keyCode: k, flags: hyper)!)
     #expect(detector.flagsChanged(hyper, pointer: pointer, at: 1000) == nil)
-    #expect(!detector.isHeld)
-}
-
-@Test func releasingTheKeyEndsTheHold() {
-    let detector = ShortcutTriggerDetector(shortcut: TriggerShortcut(keyCode: k, flags: hyper)!)
-    #expect(!detector.keyUp(k))
-    #expect(detector.keyDown(k, flags: hyper, pointer: pointer) == pointer)
-    #expect(!detector.keyUp(UInt16(kVK_ANSI_J)))
-    #expect(detector.keyUp(k))
-    #expect(!detector.keyUp(k))
-}
-
-@Test func releasingTheModifiersEndsAKeyHold() {
-    let detector = ShortcutTriggerDetector(shortcut: TriggerShortcut(keyCode: k, flags: hyper)!)
-    #expect(detector.keyDown(k, flags: hyper, pointer: pointer) == pointer)
-    #expect(detector.modifiersChanged(.maskCommand))
 }
 
 @Test func aTriggerShortcutMustNotTakeTyping() {

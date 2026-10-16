@@ -152,13 +152,13 @@ does not know, so a file from a newer version still loads.
 | `fourFingerTap` | Tap the trackpad with four fingers. |
 | `fourFingerSwipeUp` | Swipe up with four fingers. |
 | `fourFingerSwipeDown` | Swipe down with four fingers. |
-| `shortcut` | Hold the key combination in `triggerShortcut`. The wheel closes when you let go. |
+| `shortcut` | Press the key combination in `triggerShortcut`. Press it again to close the wheel. |
 | `middleMouseButton` | Press the middle mouse button, the one under the scroll wheel. |
 
 `triggerShortcut` matters only when `triggers` has `shortcut`. A trigger shortcut is one of:
 
 - Modifiers only, for example `cmd+ctrl+alt+shift` (the Hyper key). At least one modifier is
-  needed. The wheel shows while you hold the keys.
+  needed. The wheel shows when you press all of them.
 - A key with at least one of `cmd`, `ctrl`, or `alt`, for example `ctrl+alt+space`.
 - A function key, `f1` to `f20`, alone or with modifiers.
 

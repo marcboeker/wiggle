@@ -1,8 +1,8 @@
 import AppKit
 import KeyboardShortcuts
 
-/// The key combination that opens the overlay while it is held. Without a
-/// key it is a chord of modifiers alone, such as the Hyper key.
+/// The key combination that opens and closes the overlay. Without a key it
+/// is a chord of modifiers alone, such as the Hyper key.
 struct TriggerShortcut: Equatable {
     let keyCode: UInt16?
     let flags: CGEventFlags
@@ -44,13 +44,11 @@ struct TriggerShortcut: Equatable {
     }
 }
 
-/// Opens the overlay while the trigger shortcut is held, and reports when
-/// the user lets it go, which closes the overlay.
+/// Recognises the trigger shortcut. The same press opens the overlay and,
+/// while it is open, closes it. Letting go of the keys does nothing.
 final class ShortcutTriggerDetector: TriggerDetector {
 
     private let shortcut: TriggerShortcut
-    /// Whether the shortcut opened the overlay and is still down.
-    private(set) var isHeld = false
 
     init(shortcut: TriggerShortcut) {
         self.shortcut = shortcut
@@ -60,7 +58,6 @@ final class ShortcutTriggerDetector: TriggerDetector {
         guard keyCode == shortcut.keyCode, flags.intersection(Shortcut.allowedModifiers) == shortcut.flags else {
             return nil
         }
-        isHeld = true
         return pointer
     }
 
@@ -68,28 +65,10 @@ final class ShortcutTriggerDetector: TriggerDetector {
         guard shortcut.keyCode == nil, flags.intersection(Shortcut.allowedModifiers) == shortcut.flags else {
             return nil
         }
-        isHeld = true
         return pointer
     }
 
-    /// Returns `true` when this release ends the held shortcut.
-    func keyUp(_ keyCode: UInt16) -> Bool {
-        guard isHeld, keyCode == shortcut.keyCode else { return false }
-        isHeld = false
-        return true
-    }
-
-    /// Returns `true` when `flags` no longer hold every modifier of the
-    /// shortcut.
-    func modifiersChanged(_ flags: CGEventFlags) -> Bool {
-        guard isHeld, !flags.isSuperset(of: shortcut.flags) else { return false }
-        isHeld = false
-        return true
-    }
-
-    func reset() {
-        isHeld = false
-    }
+    func reset() {}
 }
 
 /// What a recorder has seen since recording began. Each method returns
